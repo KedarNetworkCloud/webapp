@@ -6,7 +6,7 @@ const express = require('express')
 const { Sequelize } = require('sequelize');
 const application = express();
 
-application.use(express.json())
+///application.use(express.json())
 
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USERNAME, process.env.DB_PASSWORD, {
     host: process.env.DB_HOST,
@@ -16,7 +16,7 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USERNAME, pr
 
 
 application.use((req, res, next) => {
-    if (req.body && Object.keys(req.body).length !== 0 || (Object.keys(req.body).length === 0 && req.body.constructor === Object)) {
+    if (req.headers['content-length'] > 0) {
       return res.status(400).send();
     }
     next();
