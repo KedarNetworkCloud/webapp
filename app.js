@@ -16,7 +16,7 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USERNAME, pr
 
 
 application.use((req, res, next) => {
-    if (req.body && Object.keys(req.body).length !== 0) {
+    if (req.body && Object.keys(req.body).length !== 0 || (Object.keys(req.body).length === 0 && req.body.constructor === Object)) {
       return res.status(400).send();
     }
     next();
