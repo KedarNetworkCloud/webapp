@@ -20,7 +20,7 @@ async function checkDBConnection() {
         await sequelize.authenticate();
         return 1;
     } catch (error) {
-        throw new Error('Database connection failed');
+        throw new Error();
     }
 }
 
