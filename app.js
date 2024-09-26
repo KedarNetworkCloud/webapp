@@ -25,21 +25,6 @@ async function checkDBConnection() {
 }
 
 
-application.use(async (req, res, next) => {
-    try {
-        const dbConnectionStatus = await checkDBConnection();
-        if (dbConnectionStatus === 1) {
-            if (req.headers['content-length'] > 0) {
-                return res.status(400).send('');
-            }
-            next();
-        }
-    } catch (error) {
-        return res.status(503).send();
-    }
-});
-
-
 application.head('/healthz', async (req, res) => {
     try {
         const dbConnectionStatus = await checkDBConnection();
@@ -55,8 +40,16 @@ application.head('/healthz', async (req, res) => {
 application.get('/healthz', async (req, res) => {
     try {
         const dbConnectionStatus = await checkDBConnection();
-        if (dbConnectionStatus === 1) {
+
+        let contentLength = 0;
+        if (req.headers['content-length']) {
+            contentLength = parseInt(req.headers['content-length'], 10);
+        }
+        
+        if (dbConnectionStatus === 1 && contentLength === 0) {
             return res.status(200).set('Cache-Control', 'no-cache').send();
+        } else if (dbConnectionStatus === 1 && contentLength > 0) {
+            return res.status(400).send('');
         }
     } catch (error) {
         return res.status(503).set('Cache-Control', 'no-cache').send();
