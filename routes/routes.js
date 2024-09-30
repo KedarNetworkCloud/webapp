@@ -26,6 +26,14 @@ const checkDBMiddleware = async (req, res, next) => {
     next(); // Proceed to the next middleware or route handler
 };
 
+router.head('/user', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send();
+});
+
+router.head('/user/self', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send();
+});
+
 // Authentication middleware (same as before)
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -86,7 +94,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             lastName,
         });
 
-        return res.status(201).json({
+        return res.status(204).json({
             id: newUser.id,
             email: newUser.email,
             firstName: newUser.firstName,
@@ -120,13 +128,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 
         await user.save(); // Save changes
 
-        return res.status(200).json({
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            account_created: user.account_created,
-            account_updated: user.account_updated,
+        return res.status(204).json({
         });
     } catch (error) {
         console.error('Error updating user:', error);
@@ -151,6 +153,20 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+
+router.all('/user', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
+});
+
+router.all('/user/self', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
+});
+
+router.use((req, res) => {
+    return res.status(404).json();
+  });
+
 
 // Export the router
 module.exports = router;
