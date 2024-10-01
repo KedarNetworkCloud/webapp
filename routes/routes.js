@@ -3,6 +3,9 @@ const express = require('express');
 const bcrypt = require('bcrypt'); // For hashing passwords
 const User = require('../models/user.js'); // Adjust the path to your User model
 const sequelize = require('../config/config.js'); // Ensure this is the correct path
+const { ValidationError } = require('sequelize');
+const { Op } = require('sequelize');
+
 
 const router = express.Router();
 let dbConnectionStatus = false; // Global variable to track DB connection status
@@ -34,67 +37,77 @@ router.head('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
-// Authentication middleware (same as before)
+// Authentication middleware (with case-insensitive email query)
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
 
-    // Check if Authorization header is present and starts with "Basic"
     if (!authHeader || !authHeader.startsWith('Basic ')) {
         return res.status(401).json();
     }
 
-    // Extract base64-encoded string after "Basic "
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [email, password] = credentials.split(':');
 
     try {
-        // Find user by email
-        const user = await User.findOne({ where: { email } });
+        // Case-insensitive email search using `Op.iLike` in PostgreSQL
+        const user = await User.findOne({
+            where: { email: { [Op.iLike]: email } }
+        });
+
         if (!user) {
             return res.status(401).json();
         }
 
-        // Compare the provided password with the stored hashed password
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(401).json();
         }
 
-        // Attach user to the request object for use in the route handler
         req.user = user;
-        next(); // Move to the next middleware or route handler
+        next();
     } catch (error) {
         console.error('Error during authentication:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json();
     }
 };
 
-// Create User Route
+
 router.post('/user', checkDBMiddleware, async (req, res) => {
+    // Destructure the request body
     const { first_name, last_name, password, email } = req.body;
+
+    // Input validation: Check if all required fields are present
+    if (!first_name || !last_name || !password || !email) {
+        return res.status(400).json();
+    }
+
     const firstName = first_name;
     const lastName = last_name;
 
     try {
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json();
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
             return res.status(400).json();
         }
 
-        // Hash the password before saving
-        const hashedPassword = await bcrypt.hash(password, 10);
-
+        hashedPassword = await bcrypt.hash(password, 10);
         // Create new user
         const newUser = await User.create({
             email,
-            password: hashedPassword, // Use hashed password
+            password: hashedPassword,
             firstName,
             lastName,
         });
 
-        return res.status(204).json({
+        return res.status(201).json({
             id: newUser.id,
             email: newUser.email,
             firstName: newUser.firstName,
@@ -104,37 +117,50 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating user:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        // General error response
+        return res.status(500).json({ message: 'Internal server error.' });
     }
 });
 
+
+
 // Update User Route
 router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
-    const { firstName, lastName, password } = req.body; // Assuming you still send these in the body
-    try {
-        // Update user fields if provided
-        const user = req.user; // Use authenticated user from authMiddleware
+    const { first_name, last_name, password } = req.body;
 
-        // Update fields
-        if (firstName) {
-            user.firstName = firstName;
+    // Check for any invalid fields in the request body
+    const fieldsAllowedToBeUpdated = ['first_name', 'last_name', 'password'];
+    for (let key in req.body) {
+        if (!fieldsAllowedToBeUpdated.includes(key)) {
+            return res.status(400).json();
         }
-        if (lastName) {
-            user.lastName = lastName;
-        }
+    }
+
+    try {
+        const user = req.user;
+
+        // Update fields if provided
+        if (first_name) user.firstName = first_name;
+        if (last_name) user.lastName = last_name;
+
+        // Hash the password if provided
         if (password) {
-            user.password = await bcrypt.hash(password, 10); // Hash new password if provided
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
         }
 
         await user.save(); // Save changes
 
-        return res.status(204).json({
-        });
+        return res.status(204).send(); // No Content status
+
     } catch (error) {
         console.error('Error updating user:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json();
     }
 });
+
+
 
 // Get User Information Route with Basic Authentication
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
