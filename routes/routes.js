@@ -77,6 +77,19 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
     // Destructure the request body
     const { first_name, last_name, password, email } = req.body;
     res.set('Cache-Control', 'no-cache');
+
+    // Allowed fields
+    const allowedFields = ['first_name', 'last_name', 'password', 'email', 'account_created', 'account_updated'];
+    
+    // Check for any extra fields
+    const requestFields = Object.keys(req.body);
+    const invalidFields = requestFields.filter(field => !allowedFields.includes(field));
+
+    // Throw 400 error if any extra fields are present
+    if (invalidFields.length > 0) {
+        return res.status(400).json();
+    }
+
     // Input validation: Check if all required fields are present
     if (!first_name || !last_name || !password || !email) {
         return res.status(400).json();
@@ -92,14 +105,15 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             return res.status(400).json();
         }
 
-        // Check if user already exists
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
             return res.status(400).json();
         }
 
-        hashedPassword = await bcrypt.hash(password, 10);
-        // Create new user
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+
         const newUser = await User.create({
             email,
             password: hashedPassword,
@@ -113,15 +127,16 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             firstName: newUser.firstName,
             lastName: newUser.lastName,
             account_created: newUser.account_created,
-            account_updated: newUser.account_updated,
+            account_updated: newUser.account_updated,  
         });
     } catch (error) {
         console.error('Error creating user:', error);
 
         // General error response
-        return res.status(500).json({ message: 'Internal server error.' });
+        return res.status(500).json();
     }
 });
+
 
 
 
