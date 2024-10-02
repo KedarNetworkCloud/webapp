@@ -76,7 +76,7 @@ const authMiddleware = async (req, res, next) => {
 router.post('/user', checkDBMiddleware, async (req, res) => {
     // Destructure the request body
     const { first_name, last_name, password, email } = req.body;
-
+    res.set('Cache-Control', 'no-cache');
     // Input validation: Check if all required fields are present
     if (!first_name || !last_name || !password || !email) {
         return res.status(400).json();
@@ -128,7 +128,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
 // Update User Route
 router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     const { first_name, last_name, password } = req.body;
-
+    res.set('Cache-Control', 'no-cache');
     // Check for any invalid fields in the request body
     const fieldsAllowedToBeUpdated = ['first_name', 'last_name', 'password'];
     for (let key in req.body) {
@@ -166,6 +166,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
         // Use the authenticated user's information from req.user
+        res.set('Cache-Control', 'no-cache');
         return res.status(200).json({
             id: req.user.id,
             email: req.user.email,
@@ -181,6 +182,11 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 });
 
 
+router.use((req, res) => {
+    return res.status(404).json();
+  });
+
+
 router.all('/user', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
 });
@@ -188,10 +194,6 @@ router.all('/user', checkDBMiddleware, async (req, res) => {
 router.all('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
 });
-
-router.use((req, res) => {
-    return res.status(404).json();
-  });
 
 
 // Export the router
