@@ -74,32 +74,32 @@ const authMiddleware = async (req, res, next) => {
 
 
 router.post('/user', checkDBMiddleware, async (req, res) => {
-    // Destructure the request body
     const { first_name, last_name, password, email } = req.body;
     res.set('Cache-Control', 'no-cache');
 
-    // Allowed fields
     const allowedFields = ['first_name', 'last_name', 'password', 'email', 'account_created', 'account_updated'];
     
-    // Check for any extra fields
     const requestFields = Object.keys(req.body);
     const invalidFields = requestFields.filter(field => !allowedFields.includes(field));
 
-    // Throw 400 error if any extra fields are present
     if (invalidFields.length > 0) {
         return res.status(400).json();
     }
 
-    // Input validation: Check if all required fields are present
     if (!first_name || !last_name || !password || !email) {
         return res.status(400).json();
     }
 
-    const firstName = first_name;
-    const lastName = last_name;
+    const alphanumericRegex = /^[a-z0-9]+$/i;
+    if (!alphanumericRegex.test(first_name) || !alphanumericRegex.test(last_name)) {
+        return res.status(400).json();
+    }
 
     try {
-        // Email validation
+        if (Object.keys(req.query).length > 0) {
+            return res.status(400).json();
+        }
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json();
@@ -110,15 +110,13 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             return res.status(400).json();
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
 
         const newUser = await User.create({
             email,
             password: hashedPassword,
-            firstName,
-            lastName,
+            firstName: first_name,
+            lastName: last_name,
         });
 
         return res.status(201).json({
@@ -127,24 +125,21 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             firstName: newUser.firstName,
             lastName: newUser.lastName,
             account_created: newUser.account_created,
-            account_updated: newUser.account_updated,  
+            account_updated: newUser.account_updated,
         });
     } catch (error) {
         console.error('Error creating user:', error);
 
-        // General error response
         return res.status(500).json();
     }
 });
 
 
 
-
-// Update User Route
 router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     const { first_name, last_name, password } = req.body;
     res.set('Cache-Control', 'no-cache');
-    // Check for any invalid fields in the request body
+
     const fieldsAllowedToBeUpdated = ['first_name', 'last_name', 'password'];
     for (let key in req.body) {
         if (!fieldsAllowedToBeUpdated.includes(key)) {
@@ -152,22 +147,28 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         }
     }
 
+    const alphanumericRegex = /^[a-z0-9]+$/i;  // Case-insensitive: allows both upper and lowercase letters
+    if (!alphanumericRegex.test(last_name) || (!alphanumericRegex.test(first_name))) {
+        return res.status(400).json();
+    }
+
     try {
+        if (Object.keys(req.query).length > 0) {
+            return res.status(400).json();
+        }
         const user = req.user;
 
-        // Update fields if provided
         if (first_name) user.firstName = first_name;
         if (last_name) user.lastName = last_name;
 
-        // Hash the password if provided
         if (password) {
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
         }
 
-        await user.save(); // Save changes
+        await user.save();
 
-        return res.status(204).send(); // No Content status
+        return res.status(204).send(); 
 
     } catch (error) {
         console.error('Error updating user:', error);
@@ -176,11 +177,12 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 });
 
 
-
-// Get User Information Route with Basic Authentication
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
-        // Use the authenticated user's information from req.user
+        if (Object.keys(req.query).length > 0) {
+            return res.status(400).json();
+        }
+
         res.set('Cache-Control', 'no-cache');
         return res.status(200).json({
             id: req.user.id,
@@ -197,19 +199,19 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 });
 
 
+
 router.use((req, res) => {
     return res.status(404).json();
   });
 
 
 router.all('/user', checkDBMiddleware, async (req, res) => {
-    return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
+    return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.all('/user/self', checkDBMiddleware, async (req, res) => {
-    return res.status(405).set('Cache-Control', 'no-cache').send(); // Method not allowed
+    return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 
-// Export the router
 module.exports = router;
