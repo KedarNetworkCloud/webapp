@@ -197,12 +197,6 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 });
 
 
-
-router.use((req, res) => {
-    return res.status(404).json();
-  });
-
-
 router.all('/user', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
@@ -211,5 +205,8 @@ router.all('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
+router.use((req, res) => {
+    return res.status(404).json();
+  });
 
 module.exports = router;
