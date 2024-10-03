@@ -1,33 +1,31 @@
-// routes/routes.js
 const express = require('express');
-const bcrypt = require('bcrypt'); 
-const User = require('../models/user.js'); 
-const sequelize = require('../config/config.js'); 
-const { ValidationError } = require('sequelize');
+const bcrypt = require('bcrypt');
+const User = require('../models/user.js');
+const sequelize = require('../config/config.js');
 const { Op } = require('sequelize');
 
-
 const router = express.Router();
-let dbConnectionStatus = false;
 
 // Check DB connection function
 async function checkDBConnection() {
     try {
         await sequelize.authenticate();
-        dbConnectionStatus = true;
+        return true;
     } catch (error) {
-        dbConnectionStatus = false;
+        return false; 
     }
 }
 
+// Middleware to check DB connection
 const checkDBMiddleware = async (req, res, next) => {
-    await checkDBConnection();
+    const dbConnectionStatus = await checkDBConnection();
     if (!dbConnectionStatus) {
         return res.status(503).json();
     }
     next();
 };
 
+// User route definitions
 router.head('/user', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
@@ -35,7 +33,6 @@ router.head('/user', checkDBMiddleware, async (req, res) => {
 router.head('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
-
 
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -70,7 +67,7 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
-
+// Create user
 router.post('/user', checkDBMiddleware, async (req, res) => {
     const { first_name, last_name, password, email } = req.body;
     res.set('Cache-Control', 'no-cache');
@@ -127,13 +124,11 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating user:', error);
-
         return res.status(500).json();
     }
 });
 
-
-
+// Update user
 router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     const { first_name, last_name, password } = req.body;
     res.set('Cache-Control', 'no-cache');
@@ -174,7 +169,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     }
 });
 
-
+// Get user details
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
         if (Object.keys(req.query).length > 0) {
@@ -196,7 +191,6 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     }
 });
 
-
 router.all('/user', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
@@ -207,6 +201,6 @@ router.all('/user/self', checkDBMiddleware, async (req, res) => {
 
 router.use((req, res) => {
     return res.status(404).json();
-  });
+});
 
-module.exports = router;
+module.exports = { router, checkDBConnection };
