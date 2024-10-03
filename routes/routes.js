@@ -1,32 +1,31 @@
 // routes/routes.js
 const express = require('express');
-const bcrypt = require('bcrypt'); // For hashing passwords
-const User = require('../models/user.js'); // Adjust the path to your User model
-const sequelize = require('../config/config.js'); // Ensure this is the correct path
+const bcrypt = require('bcrypt'); 
+const User = require('../models/user.js'); 
+const sequelize = require('../config/config.js'); 
 const { ValidationError } = require('sequelize');
 const { Op } = require('sequelize');
 
 
 const router = express.Router();
-let dbConnectionStatus = false; // Global variable to track DB connection status
+let dbConnectionStatus = false;
 
 // Check DB connection function
 async function checkDBConnection() {
     try {
         await sequelize.authenticate();
-        dbConnectionStatus = true; // Connection successful
+        dbConnectionStatus = true;
     } catch (error) {
-        dbConnectionStatus = false; // Connection failed
+        dbConnectionStatus = false;
     }
 }
 
-// Middleware to check DB connection status
 const checkDBMiddleware = async (req, res, next) => {
-    await checkDBConnection(); // Check DB connection before proceeding
+    await checkDBConnection();
     if (!dbConnectionStatus) {
-        return res.status(503).json({ message: 'Service Unavailable: Database connection failed.' });
+        return res.status(503).json();
     }
-    next(); // Proceed to the next middleware or route handler
+    next();
 };
 
 router.head('/user', checkDBMiddleware, async (req, res) => {
@@ -37,7 +36,7 @@ router.head('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
-// Authentication middleware (with case-insensitive email query)
+
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
 
@@ -50,7 +49,6 @@ const authMiddleware = async (req, res, next) => {
     const [email, password] = credentials.split(':');
 
     try {
-        // Case-insensitive email search using `Op.iLike` in PostgreSQL
         const user = await User.findOne({
             where: { email: { [Op.iLike]: email } }
         });
@@ -100,7 +98,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             return res.status(400).json();
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9](\.?[a-zA-Z0-9_-]+)*@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json();
         }
@@ -147,7 +145,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         }
     }
 
-    const alphanumericRegex = /^[a-z0-9]+$/i;  // Case-insensitive: allows both upper and lowercase letters
+    const alphanumericRegex = /^[a-z0-9]+$/i;
     if (!alphanumericRegex.test(last_name) || (!alphanumericRegex.test(first_name))) {
         return res.status(400).json();
     }
