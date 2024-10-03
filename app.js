@@ -43,9 +43,9 @@ application.use('/v1', checkDBMiddleware, newUserRoutes);
 // Sync the models with the database and start the server
 sequelize.sync()
     .then(() => {
-        console.log('Database & tables created!');
+        console.log();
         application.listen(process.env.APP_PORT, () => {
-            console.log('Cloud Assignment - 1 Demo express server is running');
+            console.log();
         });
     })
     .catch(err => {
