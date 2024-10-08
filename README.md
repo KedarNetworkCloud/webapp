@@ -34,3 +34,6 @@ This REST API supporting GET HTTP Request on v1/user path allows us to retrieve 
 
 2. PUT Request [v1/user/self]
 This REST API supporting PUT HTTP Request on v1/user/self path allows us to update specific user information from database using Basic Auth token containing information such as email address and password. For an authenticated PUT request, we only update fields such as first_name, last_name and password. If a PUT HTTP Method has any other fields other than these fields we send HTTP Status code 400 Bad request response. For an unauthenticated PUT request we return HTTP Status code 401 "Unauthorized". For every valid and authenticated PUT request we keep updating the specific user's account_updated time field with the relevant value.
+
+
+CI-CD Workflow using Github Actions
