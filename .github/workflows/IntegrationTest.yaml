@@ -1,3 +1,10 @@
+name: Node.js Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main  # Trigger on pull requests targeting the main branch
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,6 +18,11 @@ jobs:
           POSTGRES_DB: ${{ secrets.DB_NAME }}
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        options: >-
+          --health-cmd "pg_isready -U ${{ secrets.DB_USER }}"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -19,7 +31,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18.17.1'
+          node-version: '18.17.1'  # Specify Node.js version
 
       - name: Install dependencies
         run: npm install
@@ -34,11 +46,12 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
 
+      - name: Run database migrations (if required)
+        run: npm run migrate  # You can skip or modify this step if no migrations are needed
+
       - name: Run integration tests
         run: npm test
         env:
           NODE_ENV: test
-          DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
-
-
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
