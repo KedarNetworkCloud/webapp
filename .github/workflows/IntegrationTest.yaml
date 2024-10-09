@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Run integration tests
-        run: npm test -- unitTests/integration.test.js  # Adjust the path to your integration test file
+        run: npm test
         env:
           NODE_ENV: test  # Set the environment to 'test'
           DB_HOST: ${{ secrets.DB_HOST }}
