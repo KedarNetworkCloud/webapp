@@ -16,7 +16,7 @@ jobs:
           - 5432:5432  # Expose PostgreSQL on the standard port
         env:
           POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name from secrets
-          POSTGRES_USER: ${{ secrets.DB_USER }}  # Database user from secrets
+          POSTGRES_USERNAME: ${{ secrets.DB_USER }}  # Database user from secrets
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Database password from secrets
         options: >-
           --health-cmd "pg_isready -U ${{ secrets.DB_USER }}"
