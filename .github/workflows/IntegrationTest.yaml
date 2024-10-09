@@ -13,6 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up PostgreSQL
+        uses: datalust/setup-postgresql@v1
+        with:
+          postgresql version: '14'  # Adjust this to the version you need
+          port: ${{ secrets.DB_PORT }}  # Ensure your secret is set correctly
+          user: ${{ secrets.DB_USER }}  # Ensure your secret is set correctly
+          password: ${{ secrets.DB_PASSWORD }}  # Ensure your secret is set correctly
+          database: ${{ secrets.DB_NAME }}  # Ensure your secret is set correctly
+
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
@@ -21,10 +30,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run integration tests
-        run: npm test  # This will run the test script defined in package.json
+      - name: Run database migrations
+        run: |
+          node -e "require('./config/config').sync();"
         env:
-          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}  # Use IPv4 for localhost
+
+      - name: Run integration tests
+        run: npm test  # No need to specify the test file if you want to run all tests
+        env:
+          NODE_ENV: test  # Set the environment to 'test'
+          DB_HOST: ${{ secrets.DB_HOST }} # Use IPv4 for localhost
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
