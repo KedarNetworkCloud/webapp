@@ -24,7 +24,6 @@ jobs:
       - name: Run integration tests
         run: npm test  # This will run the test script defined in package.json
         env:
-          NODE_ENV: test  # Set the environment to 'test'
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
