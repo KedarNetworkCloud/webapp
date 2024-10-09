@@ -9,6 +9,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres  # Database username
+          POSTGRES_PASSWORD: kedarapte2004  # Database password
+          POSTGRES_DB: kedardemo  # Database name
+        ports:
+          - 5432:5432  # Expose port 5432
+        options: >-
+          --health-cmd pg_isready -U postgres
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -21,11 +36,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          while ! pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+
       - name: Run integration tests
         run: npm test
         env:
-          DB_HOST: 127.0.0.1
+          DB_HOST: localhost  # Use localhost to connect to the service
           DB_PORT: 5432
-          DB_USERNAME: postgres  # Use the updated variable name
+          DB_USERNAME: postgres
           DB_PASSWORD: kedarapte2004
           DB_NAME: kedardemo
