@@ -3,7 +3,7 @@ name: Node.js Integration Tests
 on:
   pull_request:
     branches:
-      - main  # This will trigger the workflow for pull requests targeting the main branch
+      - main  # Trigger the workflow for pull requests targeting the main branch
 
 jobs:
   test:
@@ -37,10 +37,12 @@ jobs:
         run: npm install
 
       - name: Set up database URL
-        run: echo "PSOTGRES_DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+        run: echo "POSTGRES_DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
 
       - name: Run integration tests
         run: npm test  # This will run the test script defined in package.json
         env:
           NODE_ENV: test  # Set the environment to 'test'
-          DATABASE_URL: ${{ secrets.PSOTGRES_DATABASE_URL }}  # Use the constructed DATABASE_URL
+          DATABASE_URL: ${{ env.POSTGRES_DATABASE_URL }}  # Use the correct environment variable
+
+
