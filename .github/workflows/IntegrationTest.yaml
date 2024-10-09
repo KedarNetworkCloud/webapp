@@ -3,7 +3,7 @@ name: Node.js Integration Tests
 on:
   pull_request:
     branches:
-      - main  # Trigger on pull requests targeting the main branch
+      - main  # This will trigger the workflow for pull requests targeting the main branch
 
 jobs:
   test:
@@ -11,11 +11,15 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:14.8  # Use a specific version of PostgreSQL
         ports:
-          - 5432:5432
+          - 5432:5432  # Expose PostgreSQL on the standard port
+        env:
+          POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name from secrets
+          POSTGRES_USER: ${{ secrets.DB_USER }}  # Database user from secrets
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Database password from secrets
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -U ${{ secrets.DB_USER }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -27,7 +31,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18.17.1'  # Specify Node.js version
+          node-version: '18.17.1'  # Specify the Node.js version
 
       - name: Install dependencies
         run: npm install
@@ -35,20 +39,10 @@ jobs:
       - name: Set up environment variables
         run: |
           echo "DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
-        env:
-          DB_HOST: ${{ secrets.DB_PORT }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USERNAME: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-
-      - name: Run database migrations (if required)
-        run: npm run migrate  # You can skip or modify this step if no migrations are needed
 
       - name: Run integration tests
         run: npm test
         env:
-          NODE_ENV: test
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-
+          NODE_ENV: test  # Set environment to 'test'
+          DATABASE_URL: ${{ env.DATABASE_URL }}  # Use constructed DATABASE_URL
 
