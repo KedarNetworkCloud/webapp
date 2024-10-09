@@ -47,3 +47,5 @@ sequelize.sync()
     .catch(err => {
         console.error('Error creating database tables:', err);
     });
+
+module.exports = application;

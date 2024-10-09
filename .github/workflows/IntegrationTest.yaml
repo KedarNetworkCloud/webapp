@@ -1,4 +1,4 @@
-name: Node.js Unit Tests
+name: Node.js Integration Tests
 
 on:
   pull_request:
@@ -21,8 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
-        run: npm test
+      - name: Run integration tests
+        run: npm test  # This will run the test script defined in package.json
         env:
           NODE_ENV: test  # Set the environment to 'test'
-          DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}  # Use the DATABASE_URL secret
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
