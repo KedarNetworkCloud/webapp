@@ -24,7 +24,6 @@ jobs:
       - name: Run integration tests
         run: npm test
         env:
-          NODE_ENV: test  # Set the environment to 'test'
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_USERNAME: postgres  # Use the updated variable name
