@@ -19,10 +19,10 @@ jobs:
         ports:
           - 5432:5432  # Expose port 5432
         options: >-
-          --health-cmd pg_isready -U postgres
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -48,6 +48,6 @@ jobs:
         env:
           DB_HOST: localhost  # Use localhost to connect to the service
           DB_PORT: 5432
-          DB_USERNAME: postgres
+          DB_USERNAME: postgres  # Match with POSTGRES_USER
           DB_PASSWORD: kedarapte2004
-          DB_NAME: kedardemo
+          DB_NAME: kedardemo  # Match with POSTGRES_DB
