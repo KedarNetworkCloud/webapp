@@ -1,10 +1,3 @@
-name: Node.js Integration Tests
-
-on:
-  pull_request:
-    branches:
-      - main  # Trigger the workflow for pull requests targeting the main branch
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -18,31 +11,34 @@ jobs:
           POSTGRES_DB: ${{ secrets.DB_NAME }}
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        options: >-
-          --health-cmd "pg_isready -U ${{ secrets.DB_USER }}"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18.17.1'  # Specify the Node.js version you want to use
+          node-version: '18.17.1'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Set up database URL
-        run: echo "POSTGRES_DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+      - name: Set up environment variables
+        run: |
+          echo "DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+        env:
+          DB_HOST: localhost
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
 
       - name: Run integration tests
-        run: npm test  # This will run the test script defined in package.json
+        run: npm test
         env:
-          NODE_ENV: test  # Set the environment to 'test'
-          DATABASE_URL: ${{ env.POSTGRES_DATABASE_URL }}  # Use the correct environment variable
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
+
 
 
