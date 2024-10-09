@@ -21,12 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set up database URL
+        run: echo "DATABASE_URL=postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+
       - name: Run integration tests
         run: npm test  # This will run the test script defined in package.json
         env:
           NODE_ENV: test  # Set the environment to 'test'
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USERNAME: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}  # Use the constructed DATABASE_URL

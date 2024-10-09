@@ -6,7 +6,7 @@ describe('User Routes Integration Test', () => {
     const newUser = {
       first_name: 'John',
       last_name: 'Doe',
-      email: 'johndoe0898@example.com',
+      email: 'johndoe24@example.com',
       password: 'Password123'
     };
 
@@ -16,16 +16,16 @@ describe('User Routes Integration Test', () => {
       .set('Accept', 'application/json');
 
     expect(response.status).toBe(201); // Expect success for user creation
-    expect(response.body.email).toBe('johndoe0896@example.com');
+    expect(response.body.email).toBe('johndoe24@example.com');
   });
 
   it('should retrieve the created user via GET /v1/user/self', async () => {
     const response = await request(app)
       .get('/v1/user/self') // Match the /v1/user/self route
-      .set('Authorization', 'Basic ' + Buffer.from('johndoe0896@example.com:Password123').toString('base64'));
+      .set('Authorization', 'Basic ' + Buffer.from('johndoe24@example.com:Password123').toString('base64'));
 
     expect(response.status).toBe(200); // Expect success for user retrieval
-    expect(response.body.email).toBe('johndoe0896@example.com');
+    expect(response.body.email).toBe('johndoe24@example.com');
     expect(response.body.firstName).toBe('John');
     expect(response.body.lastName).toBe('Doe');
   });
