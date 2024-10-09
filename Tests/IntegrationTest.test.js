@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../app'); // Ensure the correct path to `app.js`
-const { sequelize } = require('../path/to/sequelize/instance'); // Adjust the path as needed
+const { sequelize } = require('../config/config.js'); // Adjust the path as needed
 
 describe('User Routes Integration Test', () => {
   // Cleanup after all tests
