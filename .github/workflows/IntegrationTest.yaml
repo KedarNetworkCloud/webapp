@@ -3,7 +3,7 @@ name: Node.js Integration Tests
 on:
   pull_request:
     branches:
-      - main  # This will trigger the workflow for pull requests targeting the main branch
+      - main
 
 jobs:
   test:
@@ -11,13 +11,13 @@ jobs:
 
     services:
       postgres:
-        image: postgres:latest  # Use the latest PostgreSQL image
+        image: postgres:14  # Specify a stable version
         env:
           POSTGRES_USER: ${{ secrets.DB_USERNAME }}  # Database username
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # New database password
-          POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name
+          POSTGRES_PASSWORD: kedarapte2004  # New database password
+          POSTGRES_DB: kedardemo  # Database name
         ports:
-          - 5432:5432  # Expose port 5432
+          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -26,7 +26,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18.17.1'  # Specify the Node.js version you want to use
+          node-version: '18.17.1'
 
       - name: Install dependencies
         run: npm install
@@ -38,11 +38,14 @@ jobs:
             sleep 2
           done
 
+      - name: View PostgreSQL logs
+        run: docker-compose logs postgres  # This might need adjusting based on your setup
+
       - name: Run integration tests
         run: npm test
         env:
           DB_HOST: postgres  # Use the service name for PostgreSQL
-          DB_PORT: 5432  # Specify the port explicitly
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}  # Match with POSTGRES_USER
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use the new password directly
-          DB_NAME: ${{ secrets.DB_NAME }}  # Use the newly created database name
+          DB_PORT: 5432
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: kedarapte2004
+          DB_NAME: kedardemo
