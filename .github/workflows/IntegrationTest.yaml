@@ -11,10 +11,10 @@ jobs:
 
     services:
       postgres:
-        image: postgres:latest  # Ensure this is correctly formatted
+        image: postgres:latest  # Use the latest PostgreSQL image
         env:
           POSTGRES_USER: ${{ secrets.DB_USERNAME }}  # Database username
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Database password
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # New database password
           POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name
         ports:
           - 5432:5432  # Expose port 5432
@@ -33,7 +33,7 @@ jobs:
 
       - name: Wait for PostgreSQL to be ready
         run: |
-          while ! pg_isready -h localhost -p 5432 -U ${{ secrets.DB_USERNAME }}; do
+          while ! pg_isready -h postgres -p 5432 -U ${{ secrets.DB_USERNAME }}; do
             echo "Waiting for PostgreSQL to be ready..."
             sleep 2
           done
@@ -41,8 +41,8 @@ jobs:
       - name: Run integration tests
         run: npm test
         env:
-          DB_HOST: localhost  # Use localhost to connect to the service
+          DB_HOST: postgres  # Use the service name for PostgreSQL
           DB_PORT: 5432  # Specify the port explicitly
           DB_USERNAME: ${{ secrets.DB_USERNAME }}  # Match with POSTGRES_USER
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
-          DB_NAME: ${{ secrets.DB_NAME }}  # Match with POSTGRES_DB
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use the new password directly
+          DB_NAME: ${{ secrets.DB_NAME }}  # Use the newly created database name

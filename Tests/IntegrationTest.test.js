@@ -16,6 +16,7 @@ describe('User Routes Integration Test', () => {
       await User.destroy({ where: { email: userEmail } });
     } catch (error) {
       console.error('Error cleaning up user:', error);
+      process.exit(1); // Forcefully stop the test run on cleanup failure
     } finally {
       await sequelize.close(); // Close the database connection
     }
