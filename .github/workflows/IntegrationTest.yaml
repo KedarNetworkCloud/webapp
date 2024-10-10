@@ -13,9 +13,9 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: postgres  # Database username
-          POSTGRES_PASSWORD: kedarapte2004  # Database password
-          POSTGRES_DB: kedardemo  # Database name
+          POSTGRES_USER: ${{ secrets.DB_USER }}   # Database username
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
+          POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name
         ports:
           - 5432:5432  # Expose port 5432
         options: >-
@@ -46,8 +46,9 @@ jobs:
       - name: Run integration tests
         run: npm test
         env:
-          DB_HOST: localhost  # Use localhost to connect to the service
-          DB_PORT: 5432
-          DB_USERNAME: postgres  # Match with POSTGRES_USER
-          DB_PASSWORD: kedarapte2004
-          DB_NAME: kedardemo  # Match with POSTGRES_DB
+          DB_HOST: ${{ secrets.DB_HOST }}  # Use localhost to connect to the service
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USER }}  # Match with POSTGRES_USER
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
+          DB_NAME: ${{ secrets.DB_NAME }}  # Match with POSTGRES_DB
+
