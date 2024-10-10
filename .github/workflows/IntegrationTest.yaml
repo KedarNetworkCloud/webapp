@@ -41,8 +41,8 @@ jobs:
       - name: Run integration tests
         run: npm test
         env:
-          DB_HOST: ${{ secrets.DB_HOST }}  # Use localhost to connect to the service
-          DB_PORT: ${{ secrets.DB_PORT }}  # Specify the port explicitly
+          DB_HOST: localhost
+          DB_PORT: 5432
           DB_USERNAME: ${{ secrets.DB_USERNAME }}  # Match with POSTGRES_USER
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
           DB_NAME: ${{ secrets.DB_NAME }}  # Match with POSTGRES_DB
