@@ -43,6 +43,6 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}  # Match with POSTGRES_USER
+          DB_USERNAME: ${{ secrets.DB_USERNAME }} 
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
           DB_NAME: ${{ secrets.DB_NAME }}  # Match with POSTGRES_DB
