@@ -13,13 +13,13 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: ${{ secrets.DB_USERNAME }}  # Use 'POSTGRES_USER' instead of 'POSTGRES_USERNAME'
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}  # Use 'POSTGRES_USER' for the database username
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
           POSTGRES_DB: ${{ secrets.DB_NAME }}  # Database name
         ports:
           - 5432:5432  # Expose port 5432
         options: >-
-          --health-cmd="pg_isready -U ${{ secrets.DB_USERNAME }}"
+          --health-cmd="pg_isready -U postgres"  # Use the default postgres user for the health check
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
