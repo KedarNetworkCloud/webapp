@@ -29,8 +29,8 @@ jobs:
       - name: Format Packer Template
         run: |
           cd packer  # Ensure you're in the correct directory
-          packer fmt -check kedarwebapp.pkr.hcl  # Check formatting of Packer templates
-          
+          packer fmt -check kedarwebapp.pkr.hcl  # Check formatting of the specific Packer template
+
       - name: Validate Packer Template
         run: |
           cd packer  # Ensure you're in the correct directory
