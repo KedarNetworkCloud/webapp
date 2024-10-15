@@ -15,7 +15,7 @@ source "amazon-ebs" "ubuntu" {
   region          = var.aws_region
   source_ami      = "ami-0cad6ee50670e3d0e"
   instance_type   = "t2.micro"
-  profile         = "Dev"
+  profile         = "DevRole"
   ssh_username    = "ubuntu"
   ami_name        = "MyApp-Image-{{timestamp}}"
   ami_description = "Custom image with application dependencies"
@@ -29,26 +29,37 @@ source "amazon-ebs" "ubuntu" {
 build {
   sources = ["source.amazon-ebs.ubuntu"]
 
+  # Create the csye6225 group and user
+  provisioner "shell" {
+    inline = [
+      "sudo groupadd csye6225 || { echo 'Failed to create group csye6225'; exit 1; }",
+      "sudo useradd -r -g csye6225 -s /usr/sbin/nologin -m csye6225 || { echo 'Failed to create user csye6225'; exit 1; }"
+    ]
+  }
+
   # Copy the zipped project folder to the VM
   provisioner "file" {
     source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
     destination = "/tmp/project.zip"
   }
 
-  # Unzip the project on the VM
+  # Unzip the project on the VM and set ownership
   provisioner "shell" {
     inline = [
       "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi",
-      "sudo unzip /tmp/project.zip -d /opt/myapp || { echo 'Failed to unzip project.zip'; exit 1; }"
+      "sudo unzip /tmp/project.zip -d /opt/myapp || { echo 'Failed to unzip project.zip'; exit 1; }",
+      "sudo chown -R csye6225:csye6225 /opt/myapp || { echo 'Failed to change ownership of /opt/myapp'; exit 1; }"
     ]
   }
 
-  # Run shell scripts in the unzipped project
+  # Run shell scripts in the unzipped project as csye6225
   provisioner "shell" {
     inline = [
-      "sudo /opt/myapp/installNodejs.sh || { echo 'Failed to install Node.js'; exit 1; }",
-      "sudo /opt/myapp/installDependencies.sh || { echo 'Failed to install dependencies'; exit 1; }",
-      "sudo /opt/myapp/webServiceFile.sh || { echo 'Failed to set up web service'; exit 1; }"
+      "sudo -u csye6225 /opt/myapp/postgresInstall.sh || { echo 'Failed to install PostgreSQL'; exit 1; }",
+      "sudo -u csye6225 /opt/myapp/installNodejs.sh || { echo 'Failed to install Node.js'; exit 1; }",
+      "sudo -u csye6225 /opt/myapp/installDependencies.sh || { echo 'Failed to install dependencies'; exit 1; }",
+      "sudo -u csye6225 /opt/myapp/webServiceFile.sh || { echo 'Failed to set up web service'; exit 1; }"
     ]
   }
+
 }
