@@ -15,10 +15,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download project.zip artifact
-        uses: actions/download-artifact@v3
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+
+      - name: Create zip file
+        run: |
+          zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
+
+      - name: Upload project.zip artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: project-zip  # The name used when uploading the artifact
+          name: project-zip  # This name must match the one used when downloading
+          path: project.zip   # The path of the zip file to upload
 
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
@@ -32,6 +45,11 @@ jobs:
         with:
           version: latest
 
+      - name: Download project.zip artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: project-zip  # The name used when uploading the artifact
+
       - name: Initialize Packer
         run: packer init kedarwebapp.pkr.hcl
         working-directory: ./packer  # Set the correct working directory for the Packer files
@@ -39,3 +57,4 @@ jobs:
       - name: Run Packer Build
         run: packer build kedarwebapp.pkr.hcl
         working-directory: ./packer  # Ensure to set the correct working directory
+
