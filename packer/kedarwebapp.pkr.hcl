@@ -15,7 +15,7 @@ source "amazon-ebs" "ubuntu" {
   region          = var.aws_region
   source_ami      = "ami-0cad6ee50670e3d0e"
   instance_type   = "t2.micro"
-  profile         = "DevRole"
+  profile         = "Dev"
   ssh_username    = "ubuntu"
   ami_name        = "MyApp-Image-{{timestamp}}"
   ami_description = "Custom image with application dependencies"
