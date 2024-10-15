@@ -26,16 +26,11 @@ jobs:
       - name: List directory contents
         run: ls -la packer  # List contents of the packer directory to verify the presence of the file
 
-      - name: Initialize Packer
-        run: |
-          cd packer  # Change to the directory where your Packer template is located
-          packer init .  # Initialize Packer
-
       - name: Format Packer Template
         run: |
           cd packer  # Ensure you're in the correct directory
-          packer fmt -check .  # Check formatting of Packer templates
-
+          packer fmt -check kedarwebapp.pkr.hcl  # Check formatting of Packer templates
+          
       - name: Validate Packer Template
         run: |
           cd packer  # Ensure you're in the correct directory

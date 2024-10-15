@@ -4,7 +4,7 @@ Overview
 
 This Health Check API assignment aims to monitor the health of our service by implementing a RESTful /healthz endpoint. The purpose of this assignment is to detect whether the running application instance can handle incoming requests.
 
-Operations Performed By /healthz Endpoint
+Operations Performed By /healthz
 
 1. Database Connection:
 
