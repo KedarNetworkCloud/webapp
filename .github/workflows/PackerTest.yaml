@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Install Packer
+      # Install Packer (since there is no direct setup action for Packer)
       - name: Install Packer
         run: |
           sudo apt-get update
@@ -23,16 +23,20 @@ jobs:
           sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
           sudo apt-get update && sudo apt-get install -y packer
 
-      # Initialize Packer configuration
+      - name: List directory contents
+        run: ls -la packer  # List contents of the packer directory to verify the presence of the file
+
       - name: Initialize Packer
-        run: packer init .
+        run: |
+          cd packer  # Change to the directory where your Packer template is located
+          packer init .  # Initialize Packer
 
-      # Format the Packer template (checking formatting)
       - name: Format Packer Template
-        run: packer fmt -check .  # This checks formatting without modifying the file
+        run: |
+          cd packer  # Ensure you're in the correct directory
+          packer fmt -check .  # Check formatting of Packer templates
 
-      # Validate the Packer template
       - name: Validate Packer Template
-        run: packer validate packer/kedarwebapp.pkr.hcl  # Update with your template file path
-
-
+        run: |
+          cd packer  # Ensure you're in the correct directory
+          packer validate kedarwebapp.pkr.hcl  # Validate the Packer template file
