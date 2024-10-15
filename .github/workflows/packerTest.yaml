@@ -18,16 +18,14 @@ jobs:
         with:
           version: latest
 
-        name: Initialize Packer
-        run: packer init kedarwebapp.pkr.hcl
+      - name: Initialize Packer
+        run: packer init ./packer/kedarwebapp.pkr.hcl
         working-directory: ./packer
 
       - name: Run Packer fmt
-        run: |
-          packer fmt -check -diff ./packer/kedarwebapp.pkr.hcl
+        run: packer fmt -check -diff ./packer/kedarwebapp.pkr.hcl
         working-directory: ./packer
 
       - name: Run Packer validate
-        run: |
-          packer validate ./packer/kedarwebapp.pkr.hcl
+        run: packer validate ./packer/kedarwebapp.pkr.hcl
         working-directory: ./packer
