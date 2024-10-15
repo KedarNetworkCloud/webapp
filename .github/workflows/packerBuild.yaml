@@ -39,7 +39,12 @@ jobs:
         run: |
           zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
 
+      - name: Initialize Packer
+        run: |
+          packer init ./packer/kedarwebapp.pkr.hcl
+        working-directory: ./packer  # Set the correct working directory for the Packer files
+
       - name: Run Packer Build
         run: |
-          packer build kedarwebapp.pkr.hcl
-        working-directory: ./packer
+          packer build ./packer/kedarwebapp.pkr.hcl
+        working-directory: ./packer  # Ensure to set the correct working directory
