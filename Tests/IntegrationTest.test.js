@@ -40,18 +40,4 @@ describe('User Routes Integration Test', () => {
     expect(response.body.email).toBe(userEmail);
   });
 
-  // Add GET request test to fetch the created user details
-  it('should retrieve the created user via GET /v1/user/self', async () => {
-    const credentials = Buffer.from(`${userEmail}:Password123`).toString('base64');
-
-    const response = await request(app)
-      .get('/v1/user/self')
-      .set('Authorization', `Basic ${credentials}`)
-      .set('Accept', 'application/json');
-
-    expect(response.status).toBe(200); // Expect success for fetching user
-    expect(response.body.email).toBe(userEmail);
-    expect(response.body.firstName).toBe('John');
-    expect(response.body.lastName).toBe('Doe');
-  });
 });

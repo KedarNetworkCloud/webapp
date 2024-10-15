@@ -1,0 +1,15 @@
+[Unit]
+Description=My Node.js Application
+After=network.target
+
+[Service]
+Type=simple
+User=csye6225
+Group=csye6225
+WorkingDirectory=/opt/myapp/webapp-fork/
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/myapp/webapp-fork/app.js  # Path to your main application file
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
