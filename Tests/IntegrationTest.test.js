@@ -7,13 +7,21 @@ describe('User Routes Integration Test', () => {
   const userEmail = 'johnd9@example.com'; // Store the created user's email for cleanup
 
   beforeAll(async () => {
-    // Any setup code can be added here
+    try {
+      // Synchronize the database with the models
+      await sequelize.sync({ force: true }); // Use force: true to drop and recreate tables
+    } catch (error) {
+      console.error('Error setting up database:', error);
+      process.exit(1); // Exit if there's a setup failure
+    }
   });
 
   afterAll(async () => {
     try {
-      // Delete the created user using the email address
-      await User.destroy({ where: { email: userEmail } });
+      const user = await User.findOne({ where: { email: userEmail } });
+      if (user) {
+        await User.destroy({ where: { email: userEmail } });
+      }
     } catch (error) {
       console.error('Error cleaning up user:', error);
       process.exit(1); // Forcefully stop the test run on cleanup failure
@@ -39,5 +47,4 @@ describe('User Routes Integration Test', () => {
     expect(response.status).toBe(201); // Expect success for user creation
     expect(response.body.email).toBe(userEmail);
   });
-
 });
