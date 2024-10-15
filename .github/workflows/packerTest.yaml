@@ -1,0 +1,34 @@
+name: Packer Template PR Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  packer-init-fmt-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Packer
+        uses: hashicorp/setup-packer@v2
+        with:
+          version: latest
+
+      - name: Initialize Packer (packer init)
+        run: |
+          packer init ./packer/kedarwebapp.pkr.hcl
+        working-directory: ./packer
+
+      - name: Run Packer fmt
+        run: |
+          packer fmt -check -diff ./packer/kedarwebapp.pkr.hcl
+        working-directory: ./packer
+
+      - name: Run Packer validate
+        run: |
+          packer validate ./packer/kedarwebapp.pkr.hcl
+        working-directory: ./packer
