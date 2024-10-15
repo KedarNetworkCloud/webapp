@@ -19,13 +19,13 @@ jobs:
           version: latest
 
       - name: Initialize Packer
-        run: packer init ./packer/kedarwebapp.pkr.hcl
-        working-directory: ./packer
+        working-directory: ./packer  # Set the correct working directory first
+        run: packer init kedarwebapp.pkr.hcl  # Now run packer init without specifying the path
 
       - name: Run Packer fmt
-        run: packer fmt -check -diff ./packer/kedarwebapp.pkr.hcl
         working-directory: ./packer
+        run: packer fmt -check -diff kedarwebapp.pkr.hcl  # No need for './packer/'
 
       - name: Run Packer validate
-        run: packer validate ./packer/kedarwebapp.pkr.hcl
         working-directory: ./packer
+        run: packer validate kedarwebapp.pkr.hcl  # No need for './packer/'
