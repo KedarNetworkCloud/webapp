@@ -33,7 +33,8 @@ build {
   provisioner "shell" {
     inline = [
       "sudo groupadd csye6225 || { echo 'Failed to create group csye6225'; exit 1; }",
-      "sudo useradd -r -g csye6225 -s /usr/sbin/nologin -m csye6225 || { echo 'Failed to create user csye6225'; exit 1; }"
+      "sudo useradd -r -g csye6225 -s /usr/sbin/nologin -m csye6225 || { echo 'Failed to create user csye6225'; exit 1; }",
+      "echo 'csye6225 ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/csye6225", # Allow csye6225 to use sudo without a password
     ]
   }
 
