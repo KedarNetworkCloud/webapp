@@ -48,7 +48,9 @@ build {
     inline = [
       "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi",
       "sudo unzip /tmp/project.zip -d /opt/myapp || { echo 'Failed to unzip project.zip'; exit 1; }",
-      "sudo chown -R csye6225:csye6225 /opt/myapp || { echo 'Failed to change ownership of /opt/myapp'; exit 1; }"
+      "sudo chown -R csye6225:csye6225 /opt/myapp || { echo 'Failed to change ownership of /opt/myapp'; exit 1; }",
+      "ls -l /opt/myapp",
+      "ls -l /opt/myapp/project"
     ]
   }
 
