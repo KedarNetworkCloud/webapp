@@ -29,11 +29,11 @@ source "amazon-ebs" "ubuntu" {
 build {
   sources = ["source.amazon-ebs.ubuntu"]
 
-# Copy the zipped project folder to the VM
-provisioner "file" {
-  source      = "../project.zip"  # Path where zip is created in the GitHub Actions runner
-  destination = "/tmp/project.zip"
-}
+  # Copy the zipped project folder to the VM
+  provisioner "file" {
+    source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
+    destination = "/tmp/project.zip"
+  }
 
   # Unzip the project on the VM
   provisioner "shell" {
