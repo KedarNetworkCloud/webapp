@@ -29,48 +29,26 @@ source "amazon-ebs" "ubuntu" {
 build {
   sources = ["source.amazon-ebs.ubuntu"]
 
-  # Copy the shell script to the VM
-  provisioner "file" {
-    source      = "C:\\Users\\kedar\\Music\\Ass4DevWebApp\\webapp-fork\\createEnv.sh" # Replace with the actual path to your createEnv.sh script
-    destination = "/opt/myapp/createEnv.sh"                                           # Destination path in the VM
-  }
+# Copy the zipped project folder to the VM
+provisioner "file" {
+  source      = "../project.zip"  # Path where zip is created in the GitHub Actions runner
+  destination = "/tmp/project.zip"
+}
 
-  # Run the script to create the .env file
+  # Unzip the project on the VM
   provisioner "shell" {
     inline = [
-      "chmod +x /opt/myapp/createEnv.sh || { echo 'Failed to make createEnv.sh executable'; exit 1; }",
-      "sudo /opt/myapp/createEnv.sh || { echo 'Failed to run createEnv.sh'; exit 1; }"
+      "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi",
+      "sudo unzip /tmp/project.zip -d /opt/myapp || { echo 'Failed to unzip project.zip'; exit 1; }"
     ]
   }
 
-
-  # Copy the zipped folder to the VM
-  provisioner "file" {
-    source      = "//mnt//c/Users//kedar//Music//Ass4DevWebApp//webapp-fork.zip" # Path to the zipped project folder
-    destination = "/tmp/webapp.zip"
-  }
-
-  # Unzip the web application in the VM
+  # Run shell scripts in the unzipped project
   provisioner "shell" {
     inline = [
-      "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi", # Install unzip if not installed
-      "sudo unzip /tmp/webapp.zip -d /opt/myapp || { echo 'Failed to unzip webapp.zip'; exit 1; }"         # Unzip the web application
-    ]
-  }
-
-  # Make all shell scripts executable in the unzipped folder
-  provisioner "shell" {
-    inline = [
-      "sudo chmod +x /opt/myapp/webapp-fork/*.sh || { echo 'Failed to make all shell scripts executable'; exit 1; }"
-    ]
-  }
-
-  # Run each script in the appropriate order
-  provisioner "shell" {
-    inline = [
-      "sudo /opt/myapp/webapp-fork/installNodejs.sh || { echo 'Failed to install Node.js'; exit 1; }",
-      "sudo /opt/myapp/webapp-fork/installDependencies.sh || { echo 'Failed to install dependencies'; exit 1; }",
-      "sudo /opt/myapp/webapp-fork/webServiceFile.sh || { echo 'Failed to set up the web service file'; exit 1; }"
+      "sudo /opt/myapp/installNodejs.sh || { echo 'Failed to install Node.js'; exit 1; }",
+      "sudo /opt/myapp/installDependencies.sh || { echo 'Failed to install dependencies'; exit 1; }",
+      "sudo /opt/myapp/webServiceFile.sh || { echo 'Failed to set up web service'; exit 1; }"
     ]
   }
 }

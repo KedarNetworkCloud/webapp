@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define the paths
-PROJECT_DIR="/mnt/c/Users/kedar/Music/Ass4DevWebApp/webapp-fork"
+PROJECT_DIR="C:/Users/kedar/Music/Ass4DevWebApp/webapp-fork"
 ENV_FILE="$PROJECT_DIR/.env"
-ZIP_OUTPUT="/mnt/c/Users/kedar/Music/Ass4DevWebApp/webapp-fork.zip"
+ZIP_OUTPUT="C:/Users/kedar/Music/Ass4DevWebApp/webapp-fork.zip"
 
 # Step 1: Create the .env file with the specified content
 echo "Creating .env file at $ENV_FILE"
@@ -28,7 +28,14 @@ fi
 
 # Step 2: Zip the project folder
 echo "Creating zip of $PROJECT_DIR at $ZIP_OUTPUT"
-zip -r "$ZIP_OUTPUT" "$PROJECT_DIR"
+
+# Check if 'zip' command is available, otherwise use PowerShell
+if command -v zip >/dev/null 2>&1; then
+    zip -r "$ZIP_OUTPUT" "$PROJECT_DIR"/*
+else
+    echo "zip command not found. Attempting to use PowerShell to create a zip file."
+    powershell -Command "Compress-Archive -Path '$PROJECT_DIR/*' -DestinationPath '$ZIP_OUTPUT'"
+fi
 
 # Check if the zip file was created
 if [[ -f "$ZIP_OUTPUT" ]]; then
