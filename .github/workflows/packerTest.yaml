@@ -18,14 +18,26 @@ jobs:
         with:
           version: latest
 
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+
+      - name: Create zip file
+        run: |
+          zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
+
       - name: Initialize Packer
-        working-directory: ./packer  # Set the correct working directory first
-        run: packer init kedarwebapp.pkr.hcl  # Now run packer init without specifying the path
+        run: packer init kedarwebapp.pkr.hcl
+        working-directory: ./packer
 
       - name: Run Packer fmt
+        run: packer fmt -check -diff kedarwebapp.pkr.hcl
         working-directory: ./packer
-        run: packer fmt -check -diff kedarwebapp.pkr.hcl  # No need for './packer/'
 
       - name: Run Packer validate
+        run: packer validate kedarwebapp.pkr.hcl
         working-directory: ./packer
-        run: packer validate kedarwebapp.pkr.hcl  # No need for './packer/'
