@@ -37,7 +37,7 @@ const User = sequelize.define('User', {
     },
 }, {
     timestamps: false,
-    tableName: 'User',
+    tableName: 'user', // Use lowercase to match PostgreSQL conventions
     hooks: {
         beforeUpdate: (user) => {
             user.account_updated = new Date(); // Update timestamp on user update
