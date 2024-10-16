@@ -39,9 +39,10 @@ application.use('/v1', checkDBMiddleware, newUserRoutes);
 
 sequelize.sync()
     .then(() => {
-        console.log();
-        application.listen(process.env.APP_PORT, () => {
-            console.log();
+        console.log('Database synced successfully.');
+        const port = process.env.APP_PORT || 8080;  // Fallback to 8080 if APP_PORT is not set
+        application.listen(port, () => {
+            console.log(`App listening on port ${port}`);
         });
     })
     .catch(err => {
