@@ -32,12 +32,6 @@ jobs:
         run: |
           zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
 
-      - name: Upload project.zip as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: project-zip
-          path: project.zip  # Specify the path to the zip file
-
       - name: Initialize Packer
         run: packer init kedarwebapp.pkr.hcl
         working-directory: ./packer
