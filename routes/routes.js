@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const User = require('../models/user.js');
+const AppUser = require('../models/user.js');  // Changed User to AppUser
 const sequelize = require('../config/config.js');
 const { Op } = require('sequelize');
 
@@ -46,7 +46,7 @@ const authMiddleware = async (req, res, next) => {
     const [email, password] = credentials.split(':');
 
     try {
-        const user = await User.findOne({
+        const user = await AppUser.findOne({  // Changed User to AppUser
             where: { email: { [Op.iLike]: email } }
         });
 
@@ -100,14 +100,14 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             return res.status(400).json();
         }
 
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await AppUser.findOne({ where: { email } });  // Changed User to AppUser
         if (existingUser) {
             return res.status(400).json();
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = await User.create({
+        const newUser = await AppUser.create({  // Changed User to AppUser
             email,
             password: hashedPassword,
             firstName: first_name,
@@ -141,7 +141,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     }
 
     const alphanumericRegex = /^[a-z0-9]+$/i;
-    if (!alphanumericRegex.test(last_name) || (!alphanumericRegex.test(first_name))) {
+    if (!alphanumericRegex.test(last_name) || !alphanumericRegex.test(first_name)) {
         return res.status(400).json();
     }
 
@@ -191,6 +191,7 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     }
 });
 
+// Additional route definitions for user
 router.all('/user', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });

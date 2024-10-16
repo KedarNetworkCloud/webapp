@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/config.js');
 
-const User = sequelize.define('User', {
+const AppUser = sequelize.define('AppUser', {  // Changed variable name from User to AppUser
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -38,11 +38,11 @@ const User = sequelize.define('User', {
 }, {
     timestamps: false,
     hooks: {
-        beforeUpdate: (user) => {
-            user.account_updated = new Date(); // Update timestamp on user update
+        beforeUpdate: (appUser) => {  // Updated parameter from user to appUser for clarity
+            appUser.account_updated = new Date(); // Update timestamp on user update
         }
     },
     schema: 'public', 
 });
 
-module.exports = User;
+module.exports = AppUser;  // Changed from User to AppUser
