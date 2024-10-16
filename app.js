@@ -24,6 +24,10 @@ application.head('/healthz', checkDBMiddleware, async (req, res) => {
 application.get('/healthz', checkDBMiddleware, async (req, res) => {
     let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
+    if (Object.keys(req.query).length > 0) {
+        return res.status(400).json();
+    }
+
     if (contentLength === 0) {
         return res.status(200).set('Cache-Control', 'no-cache').send();
     } else if (contentLength > 0) {

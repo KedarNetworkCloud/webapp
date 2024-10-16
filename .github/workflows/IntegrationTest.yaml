@@ -47,3 +47,4 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}  # Match with POSTGRES_USER
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Use GitHub Secrets for security
           DB_NAME: ${{ secrets.DB_NAME }}  # Match with POSTGRES_DB
+          APP_PORT: ${{ secrets.APP_PORT }} 
