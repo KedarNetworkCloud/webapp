@@ -20,7 +20,6 @@ source "amazon-ebs" "ubuntu" {
   ami_name        = "MyApp-Image-{{timestamp}}"
   ami_description = "Custom image with application dependencies"
   vpc_id          = "vpc-0730c8b36ce4de851"
-  subnet_id       = "subnet-084d1da55866c7496"
   tags = {
     Name = "MyApp-Image"
   }
