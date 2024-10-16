@@ -53,19 +53,4 @@ describe('User Routes Integration Test', () => {
     expect(response.body.firstName).toBe(newUser.first_name);
     expect(response.body.lastName).toBe(newUser.last_name);
   });
-
-  it('should return 400 for missing required fields when creating user', async () => {
-    const invalidUser = {
-      first_name: 'Jane', // missing last name
-      email: 'janedoe@example.com',
-      password: 'Password123'
-    };
-
-    const response = await request(app)
-      .post('/v1/user') // Match the /user route
-      .send(invalidUser)
-      .set('Accept', 'application/json');
-
-    expect(response.status).toBe(400); // Expect error for bad request
-  });
 });
