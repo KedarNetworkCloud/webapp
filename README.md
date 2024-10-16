@@ -40,4 +40,4 @@ CI-CD Workflow using Github Actions
 
 Checking Integration Tests
 
-Added Packer Test check - 4
+Added Packer Test check - 5
