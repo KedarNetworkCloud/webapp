@@ -65,5 +65,4 @@ build {
       "sudo -u csye6225 /opt/myapp/webServiceFile.sh || { echo 'Failed to set up web service'; exit 1; }"
     ]
   }
-
 }
