@@ -21,8 +21,8 @@ source "amazon-ebs" "ubuntu" {
   ami_description             = "Custom image with application dependencies"
   vpc_id                      = "vpc-0730c8b36ce4de851"
   subnet_id                   = "subnet-0e2418a1340e2bbf2"
-  associate_public_ip_address = true # Corrected line
-  ami_users = ["043309350711"]  # Replace with your DEMO AWS account ID
+  associate_public_ip_address = true             # Corrected line
+  ami_users                   = ["043309350711"] # Replace with your DEMO AWS account ID
   tags = {
     Name = "MyApp-Image"
   }
