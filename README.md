@@ -40,4 +40,4 @@ CI-CD Workflow using Github Actions
 
 Checking Integration Tests
 
-Assignment 04 - Check
+Assignment 04 - Checking AMI Sharing from DEV to DEMO
