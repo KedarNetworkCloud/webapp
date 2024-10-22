@@ -10,12 +10,11 @@ describe('User Routes Integration Test', () => {
     try {
       // Drop the AppUsers table if it exists
       await sequelize.getQueryInterface().dropTable('AppUsers'); // Drop table if exists
-      await sequelize.getQueryInterface().dropEnum('AppUsers');  // Drop type if exists
       // Synchronize the database with the models
       await sequelize.sync({ force: true }); // Use force: true to drop and recreate tables
       console.log('Database synchronized successfully.');
     } catch (error) {
-      console.error('Error setting up database:', error);
+      console.error('Error setting up database:', error.message || error);
       process.exit(1); // Exit if there's a setup failure
     }
   });
@@ -27,14 +26,14 @@ describe('User Routes Integration Test', () => {
         await AppUser.destroy({ where: { email: userEmail } });
       }
     } catch (error) {
-      console.error('Error cleaning up user:', error);
+      console.error('Error cleaning up user:', error.message || error);
       process.exit(1); // Forcefully stop the test run on cleanup failure
     } finally {
       await sequelize.close(); // Close the database connection
     }
   });
 
-  it('should create a new user via POST /user', async () => {  // Ensure endpoint matches exactly
+  it('should create a new user via POST /user', async () => {
     const newUser = {
       first_name: 'John',
       last_name: 'Doe',
