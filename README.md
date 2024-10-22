@@ -42,3 +42,6 @@ Checking Integration Tests
 
 Assignment 04 - Checking AMI Sharing from DEV to DEMO - Checking Before submission 
 CODE DEMO 
+
+Assignment 05 - DB Seperated as RDS Instance
+
