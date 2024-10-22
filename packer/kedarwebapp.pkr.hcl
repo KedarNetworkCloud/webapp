@@ -46,6 +46,7 @@ build {
     destination = "/tmp/project.zip"
   }
 
+
   # Unzip the project on the VM and set ownership
   provisioner "shell" {
     inline = [
@@ -57,13 +58,11 @@ build {
     ]
   }
 
-  # Run shell scripts in the unzipped project as csye6225
   provisioner "shell" {
-    inline = [
-      "sudo -u csye6225 /opt/myapp/postgresInstall.sh || { echo 'Failed to install PostgreSQL'; exit 1; }",
-      "sudo -u csye6225 /opt/myapp/installNodejs.sh || { echo 'Failed to install Node.js'; exit 1; }",
-      "sudo -u csye6225 /opt/myapp/installDependencies.sh || { echo 'Failed to install dependencies'; exit 1; }",
-      "sudo -u csye6225 /opt/myapp/webServiceFile.sh || { echo 'Failed to set up web service'; exit 1; }"
+    scripts = [
+      "../installNodejs.sh",
+      "../installDependencies.sh",
+      "../webServiceFile.sh"
     ]
   }
 
