@@ -40,11 +40,11 @@ build {
     ]
   }
 
-    # Copy the zipped project folder to the VM
-    provisioner "file" {
-      source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
-      destination = "/tmp/project.zip"
-    }
+  # Copy the zipped project folder to the VM
+  provisioner "file" {
+    source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
+    destination = "/tmp/project.zip"
+  }
 
 
   # Unzip the project on the VM and set ownership
@@ -58,12 +58,12 @@ build {
     ]
   }
 
-provisioner "shell" {
-  scripts = [
-    "../installNodejs.sh",
-    "../installDependencies.sh",
-    "../webServiceFile.sh"
-  ]
-}
+  provisioner "shell" {
+    scripts = [
+      "../installNodejs.sh",
+      "../installDependencies.sh",
+      "../webServiceFile.sh"
+    ]
+  }
 
 }
