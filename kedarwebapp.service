@@ -6,8 +6,8 @@ After=network.target
 Type=simple
 User=csye6225
 Group=csye6225
-WorkingDirectory=/opt/myapp/webapp-fork
-ExecStart=/usr/bin/node /opt/myapp/webapp-fork/app.js  # Start your Node.js application
+WorkingDirectory=/opt/myapp
+ExecStart=/usr/bin/node /opt/myapp/app.js  # Start your Node.js application
 Restart=on-failure
 
 [Install]
