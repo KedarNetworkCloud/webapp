@@ -4,11 +4,6 @@ const { AppUser } = require('../models/user'); // Adjust the import based on you
 const { checkDBMiddleware, authMiddleware } = require('./routes.js'); // Import middleware
 const multer = require('multer'); // Assuming you're using multer for file uploads
 
-// Configure AWS SDK with region and credentials from environment variables
-AWS.config.update({
-    region: process.env.AWS_REGION, // Set AWS region from .env
-});
-
 const upload = multer({ /* Multer configuration */ });
 const router = express.Router();
 const s3 = new AWS.S3(); // Create an S3 instance
