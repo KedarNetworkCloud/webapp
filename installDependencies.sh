@@ -8,4 +8,7 @@ sudo rm -rf node_modules
 sudo npm install
 sudo npm install bcrypt@5.1.1
 sudo npm install dotenv
+sudo npm install multer
+sudo npm install multer-s3
+sudo npm install aws-sdk
 

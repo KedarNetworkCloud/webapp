@@ -1,43 +1,16 @@
 const express = require('express');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
 const AWS = require('aws-sdk');
-const AppUser = require('../models/user.js'); // Your AppUser model
+const { AppUser } = require('../models/user'); // Adjust the import based on your structure
 const { checkDBMiddleware, authMiddleware } = require('./routes.js'); // Import middleware
+const multer = require('multer'); // Assuming you're using multer for file uploads
+const upload = multer({ /* Multer configuration */ });
 
 const router = express.Router();
+const s3 = new AWS.S3(); // Ensure AWS SDK is configured correctly
 
-// Configure AWS S3
-const s3 = process.env.NODE_ENV === 'test'
-    ? {} // Provide an empty object for testing to avoid errors
-    : new AWS.S3({
-        region: process.env.AWS_REGION || 'us-east-1', // Set this in your .env file
-    });
-
-// Multer S3 Storage Configuration
-const upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: process.env.S3_BUCKET_NAME || 'mock-bucket', // Your S3 bucket name from .env
-        contentType: multerS3.AUTO_CONTENT_TYPE,
-        key: (req, file, cb) => {
-            cb(null, `${req.user.id}/${file.originalname}`); // Use user ID and original file name
-        },
-    }),
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png/; // Allowed extensions
-        const isValid = allowedTypes.test(file.mimetype); // Check mime type
-        if (isValid) {
-            cb(null, true); // Accept file
-        } else {
-            cb(new Error('Invalid file type. Only JPEG and PNG are allowed!'), false); // Reject file
-        }
-    },
-    limits: { fileSize: 5 * 1024 * 1024 }, // Limit files to 5MB
-});
-
-// POST /v1/user/self/pic
-router.post('/user/self/pic', upload.single('profileImage'), async (req, res) => {
+// POST /user/self/pic
+router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profileImage'), async (req, res) => {
+    console.log("Uploading image");
     try {
         const { file } = req;
         if (!file) {
@@ -68,4 +41,60 @@ router.post('/user/self/pic', upload.single('profileImage'), async (req, res) =>
     }
 });
 
-module.exports = { router };
+// GET /user/self/pic
+router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
+    try {
+        // Retrieve the user's profile image details
+        const user = await AppUser.findOne({
+            where: { id: req.user.id },
+            attributes: ['profile_image_file_name', 'profile_image_url', 'profile_image_upload_date']
+        });
+
+        if (!user || !user.profile_image_url) {
+            return res.status(404).json({ message: 'Profile image not found.' });
+        }
+
+        return res.status(200).json({
+            file_name: user.profile_image_file_name,
+            url: user.profile_image_url,
+            upload_date: user.profile_image_upload_date
+        });
+    } catch (error) {
+        console.error('Error retrieving image:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// DELETE /user/self/pic
+router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
+    try {
+        // Retrieve the user's current profile image details
+        const user = await AppUser.findOne({ where: { id: req.user.id } });
+
+        if (!user || !user.profile_image_url) {
+            return res.status(404).json({ message: 'No profile image to delete.' });
+        }
+
+        // Delete the image from S3
+        const params = {
+            Bucket: process.env.S3_BUCKET_NAME, // Ensure your bucket name is set in your environment variables
+            Key: user.profile_image_url.split('/').pop() // Extract the file name from the URL
+        };
+
+        await s3.deleteObject(params).promise();
+
+        // Delete the image record from the database
+        await AppUser.update({
+            profile_image_file_name: null,
+            profile_image_url: null,
+            profile_image_upload_date: null,
+        }, { where: { id: req.user.id } });
+
+        return res.status(204).send(); // No Content
+    } catch (error) {
+        console.error('Error deleting image:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+module.exports = router;
