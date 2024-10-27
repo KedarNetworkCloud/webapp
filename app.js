@@ -43,7 +43,7 @@ application.all('/healthz', checkDBMiddleware, async (req, res) => {
 
 // Use routes
 application.use('/v1', checkDBMiddleware, newUserRoutes);
-application.use('/v1', checkDBMiddleware, profileImageRoutes); // Use checkDBMiddleware with profileImageRoutes
+application.use('/v1', profileImageRoutes); // Use checkDBMiddleware with profileImageRoutes
 
 // Sync database and start server
 sequelize.sync()
