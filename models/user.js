@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/config.js');
 
-const AppUser = sequelize.define('AppUser', {  // Changed variable name from User to AppUser
+const AppUser = sequelize.define('AppUser', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -35,14 +35,26 @@ const AppUser = sequelize.define('AppUser', {  // Changed variable name from Use
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
+    profile_image_file_name: {
+        type: DataTypes.STRING,
+        allowNull: true, // Can be null initially if the user hasn’t uploaded an image
+    },
+    profile_image_url: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    profile_image_upload_date: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     timestamps: false,
     hooks: {
-        beforeUpdate: (appUser) => {  // Updated parameter from user to appUser for clarity
-            appUser.account_updated = new Date(); // Update timestamp on user update
+        beforeUpdate: (appUser) => {
+            appUser.account_updated = new Date(); // Update the timestamp whenever the record is updated
         }
     },
     schema: 'public', 
 });
 
-module.exports = AppUser;  // Changed from User to AppUser
+module.exports = AppUser;

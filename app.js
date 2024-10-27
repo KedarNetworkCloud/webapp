@@ -5,8 +5,10 @@ const express = require('express');
 const sequelize = require('./config/config.js');
 const application = express();
 const { router: newUserRoutes, checkDBConnection } = require('./routes/routes.js'); 
+const { router: profileImageRoutes } = require('./routes/profileImage.js'); // Ensure you import profileImageRoutes
 application.use(express.json());
 
+// Middleware to check DB connection
 const checkDBMiddleware = async (req, res, next) => {
     try {
         await sequelize.authenticate();
@@ -39,8 +41,11 @@ application.all('/healthz', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
+// Use routes
 application.use('/v1', checkDBMiddleware, newUserRoutes);
+application.use('/v1', checkDBMiddleware, profileImageRoutes); // Use checkDBMiddleware with profileImageRoutes
 
+// Sync database and start server
 sequelize.sync()
     .then(() => {
         console.log('Database synced successfully.');
