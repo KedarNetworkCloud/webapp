@@ -3,10 +3,15 @@ const AWS = require('aws-sdk');
 const { AppUser } = require('../models/user'); // Adjust the import based on your structure
 const { checkDBMiddleware, authMiddleware } = require('./routes.js'); // Import middleware
 const multer = require('multer'); // Assuming you're using multer for file uploads
-const upload = multer({ /* Multer configuration */ });
 
+// Configure AWS SDK with region and credentials from environment variables
+AWS.config.update({
+    region: process.env.AWS_REGION, // Set AWS region from .env
+});
+
+const upload = multer({ /* Multer configuration */ });
 const router = express.Router();
-const s3 = new AWS.S3(); // Ensure AWS SDK is configured correctly
+const s3 = new AWS.S3(); // Create an S3 instance
 
 // POST /user/self/pic
 router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profileImage'), async (req, res) => {
@@ -17,11 +22,22 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
             return res.status(400).json({ message: 'No file uploaded or invalid file type.' });
         }
 
+        // Set S3 upload parameters
+        const s3Params = {
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: file.originalname, // Use original file name
+            Body: file.buffer, // Use file buffer for upload
+            ContentType: file.mimetype, // Set the content type
+        };
+
+        // Upload to S3
+        const uploadResult = await s3.upload(s3Params).promise();
+
         // Create uploaded image object
         const uploadedImage = {
             file_name: file.originalname, // Store the original file name
             id: req.user.id,
-            url: file.location, // S3 URL of the uploaded file
+            url: uploadResult.Location, // S3 URL of the uploaded file
             upload_date: new Date().toISOString(), // Current date in ISO format
             user_id: req.user.id,
         };
