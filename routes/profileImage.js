@@ -37,7 +37,7 @@ const upload = multer({
 });
 
 // POST /v1/user/self/pic
-router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profileImage'), async (req, res) => {
+router.post('/user/self/pic', upload.single('profileImage'), async (req, res) => {
     try {
         const { file } = req;
         if (!file) {
