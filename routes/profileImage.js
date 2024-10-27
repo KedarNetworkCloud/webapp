@@ -97,4 +97,4 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
     }
 });
 
-module.exports = router;
+module.exports = { router };
