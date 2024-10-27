@@ -8,15 +8,17 @@ const { checkDBMiddleware, authMiddleware } = require('./routes.js'); // Import 
 const router = express.Router();
 
 // Configure AWS S3
-const s3 = new AWS.S3({
-    region: process.env.AWS_REGION, // Set this in your .env file
-});
+const s3 = process.env.NODE_ENV === 'test'
+    ? {} // Provide an empty object for testing to avoid errors
+    : new AWS.S3({
+        region: process.env.AWS_REGION || 'us-east-1', // Set this in your .env file
+    });
 
 // Multer S3 Storage Configuration
 const upload = multer({
     storage: multerS3({
         s3: s3,
-        bucket: process.env.S3_BUCKET_NAME, // Your S3 bucket name from .env
+        bucket: process.env.S3_BUCKET_NAME || 'mock-bucket', // Your S3 bucket name from .env
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: (req, file, cb) => {
             cb(null, `${req.user.id}/${file.originalname}`); // Use user ID and original file name
@@ -66,4 +68,4 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
     }
 });
 
-module.exports = router;
+module.exports = { router };

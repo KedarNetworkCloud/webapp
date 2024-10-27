@@ -204,4 +204,4 @@ router.use((req, res) => {
     return res.status(404).json();
 });
 
-module.exports = { router, checkDBConnection };
+module.exports = { router, checkDBConnection,checkDBMiddleware, authMiddleware };
