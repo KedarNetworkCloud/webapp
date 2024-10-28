@@ -238,25 +238,26 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
 
         // Create a new entry in the UserImage table
         const newImage = await UserImage.create({
-            file_name: file.originalname,
-            url: uploadResult.Location,
-            upload_date: new Date().toISOString(),
+            profile_image_file_name: file.originalname,
+            profile_image_url: uploadResult.Location,
+            profile_image_upload_date: new Date().toISOString(),
             userId: req.user.id, // Associate this image with the user
         });
 
         // Return the uploaded image details in the response
         return res.status(201).json({
-            file_name: newImage.file_name,
-            id: newImage.id, // Use the ID from the newly created image
-            url: newImage.url,
-            upload_date: newImage.upload_date,
+            profile_image_file_name: newImage.profile_image_file_name,
+            id: newImage.id,
+            profile_image_url: newImage.profile_image_url,
+            profile_image_upload_date: newImage.profile_image_upload_date,
             user_id: newImage.userId,
         });
     } catch (error) {
         console.error('Error uploading image:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json();
     }
 });
+
 
 
 // GET /user/self/pic
@@ -265,22 +266,23 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
         // Retrieve the user's profile image details from UserImage table
         const userImage = await UserImage.findOne({
             where: { userId: req.user.id },
-            attributes: ['file_name', 'url', 'upload_date', 'id', 'userId'] // Include id and userId
+            attributes: ['profile_image_file_name', 'profile_image_url', 'profile_image_upload_date', 'id', 'userId'] // Ensure these match your model
         });
 
         // Check if the user image exists
         if (!userImage) {
-            return res.status(400).json();
+            return res.status(404).json();
         }
 
         // Prepare the response object
         return res.status(200).json({
-            file_name: userImage.file_name,
+            profile_image_file_name: userImage.profile_image_file_name, // Correct attribute name
             id: userImage.id, // Image ID
-            url: userImage.url,
-            upload_date: userImage.upload_date,
-            user_id: userImage.userId // User ID (make sure the attribute name matches the UserImage model)
+            profile_image_url: userImage.profile_image_url, // Correct attribute name
+            profile_image_upload_date: userImage.profile_image_upload_date, // Correct attribute name
+            user_id: userImage.userId // User ID
         });
+        
     } catch (error) {
         console.error('Error retrieving image:', error);
         return res.status(500).json({ message: 'Internal server error' });
@@ -292,22 +294,20 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
     try {
         // Check if the user exists
         const user = await AppUser.findOne({ where: { id: req.user.id } });
-
         if (!user) {
-            return res.status(400).json();
+            return res.status(404).json();
         }
 
         // Retrieve the user's current profile image details
         const userImage = await UserImage.findOne({ where: { userId: req.user.id } });
-
         if (!userImage) {
-            return res.status(400).json();
+            return res.status(404).json();
         }
 
         // Delete the image from S3
         const params = {
-            Bucket: process.env.S3_BUCKET_NAME, // Ensure your bucket name is set in your environment variables
-            Key: userImage.url.split('/').pop() // Extract the file name from the URL
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: userImage.profile_image_url.split(`${process.env.S3_BUCKET_NAME}/`)[1] // Extract the key from the URL
         };
 
         await s3.deleteObject(params).promise();
@@ -321,6 +321,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Additional route definitions for user
 router.all('/user', checkDBMiddleware, async (req, res) => {
