@@ -20,8 +20,6 @@ describe('User Routes Integration Test', () => {
 
     beforeAll(async () => {
         try {
-            // Drop the AppUsers table if it exists
-            await sequelize.getQueryInterface().dropTable('AppUsers'); // Drop table if exists
             // Synchronize the database with the models
             await sequelize.sync({ force: true }); // Use force: true to drop and recreate tables
             console.log('Database synchronized successfully.');
@@ -65,3 +63,4 @@ describe('User Routes Integration Test', () => {
         expect(response.body.lastName).toBe(newUser.last_name);
     });
 });
+
