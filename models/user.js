@@ -48,6 +48,7 @@ const AppUser = sequelize.define('AppUser', {
         allowNull: true,
     },
 }, {
+    tableName: 'AppUsers',
     timestamps: false,
     hooks: {
         beforeUpdate: (appUser) => {
