@@ -23,12 +23,11 @@ const UserImage = sequelize.define('UserImage', {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'AppUser', // name of the AppUser model
+            model: 'AppUsers', // name of the AppUser model
             key: 'id',
         },
     },
 }, {
-    tableName: 'UserImages',
     timestamps: false,
     schema: 'public', 
 });
