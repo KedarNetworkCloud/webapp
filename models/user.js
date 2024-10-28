@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/config.js');
+const UserImage = require('./userImage'); // Import UserImage model
 
 const AppUser = sequelize.define('AppUser', {
     id: {
@@ -35,18 +36,6 @@ const AppUser = sequelize.define('AppUser', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
-    profile_image_file_name: {
-        type: DataTypes.STRING,
-        allowNull: true, // Can be null initially if the user hasn’t uploaded an image
-    },
-    profile_image_url: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    profile_image_upload_date: {
-        type: DataTypes.DATE,
-        allowNull: true,
-    },
 }, {
     tableName: 'AppUsers',
     timestamps: false,
@@ -56,6 +45,17 @@ const AppUser = sequelize.define('AppUser', {
         }
     },
     schema: 'public', 
+});
+
+// Define the association for one-to-one relationship
+AppUser.hasOne(UserImage, {
+    foreignKey: 'userId', // The foreign key in UserImage that refers to AppUser
+    as: 'image',          // Alias for the association
+});
+
+UserImage.belongsTo(AppUser, {
+    foreignKey: 'userId', // The foreign key in UserImage that refers to AppUser
+    as: 'user',           // Alias for the association
 });
 
 module.exports = AppUser;

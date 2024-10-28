@@ -196,66 +196,89 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 });
 
 // POST /user/self/pic
-router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profileImage'), async (req, res) => {
+router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profilePic'), async (req, res) => {
     console.log("Uploading image");
     try {
         const { file } = req;
+
+        // Check if a file was uploaded
         if (!file) {
-            return res.status(400).json({ message: 'No file uploaded or invalid file type.' });
+            return res.status(400).json();
+        }
+
+        // Validate file type
+        const allowedFileTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedFileTypes.includes(file.mimetype)) {
+            return res.status(400).json();
+        }
+
+        // Check if the user exists
+        const existingUser = await AppUser.findOne({ where: { id: req.user.id } });
+        if (!existingUser) {
+            return res.status(401).json();
+        }
+
+        // Check if the user already has a profile image
+        const existingImage = await UserImage.findOne({ where: { userId: req.user.id } });
+        if (existingImage) {
+            return res.status(400).json();
         }
 
         // Set S3 upload parameters
         const s3Params = {
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: file.originalname, // Use original file name
-            Body: file.buffer, // Use file buffer for upload
-            ContentType: file.mimetype, // Set the content type
+            Key: `${req.user.id}/${Date.now()}_${file.originalname}`, // Unique key for each image
+            Body: file.buffer,
+            ContentType: file.mimetype,
         };
 
         // Upload to S3
         const uploadResult = await s3.upload(s3Params).promise();
 
-        // Create uploaded image object
-        const uploadedImage = {
+        // Create a new entry in the UserImage table
+        const newImage = await UserImage.create({
             file_name: file.originalname,
-            id: req.user.id,
             url: uploadResult.Location,
             upload_date: new Date().toISOString(),
-            user_id: req.user.id,
-        };
-
-        // Update the user's profile image details in the database
-        await AppUser.update({
-            profile_image_file_name: uploadedImage.file_name,
-            profile_image_url: uploadedImage.url,
-            profile_image_upload_date: uploadedImage.upload_date,
-        }, { where: { id: req.user.id } });
+            userId: req.user.id, // Associate this image with the user
+        });
 
         // Return the uploaded image details in the response
-        return res.status(201).json(uploadedImage);
+        return res.status(201).json({
+            file_name: newImage.file_name,
+            id: newImage.id, // Use the ID from the newly created image
+            url: newImage.url,
+            upload_date: newImage.upload_date,
+            user_id: newImage.userId,
+        });
     } catch (error) {
         console.error('Error uploading image:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
+
 // GET /user/self/pic
 router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
-        // Retrieve the user's profile image details
-        const user = await AppUser.findOne({
-            where: { id: req.user.id },
-            attributes: ['profile_image_file_name', 'profile_image_url', 'profile_image_upload_date']
+        // Retrieve the user's profile image details from UserImage table
+        const userImage = await UserImage.findOne({
+            where: { userId: req.user.id },
+            attributes: ['file_name', 'url', 'upload_date', 'id', 'userId'] // Include id and userId
         });
 
-        if (!user || !user.profile_image_url) {
-            return res.status(404).json({ message: 'Profile image not found.' });
+        // Check if the user image exists
+        if (!userImage) {
+            return res.status(400).json();
         }
 
+        // Prepare the response object
         return res.status(200).json({
-            file_name: user.profile_image_file_name,
-            url: user.profile_image_url,
-            upload_date: user.profile_image_upload_date
+            file_name: userImage.file_name,
+            id: userImage.id, // Image ID
+            url: userImage.url,
+            upload_date: userImage.upload_date,
+            user_id: userImage.userId // User ID (make sure the attribute name matches the UserImage model)
         });
     } catch (error) {
         console.error('Error retrieving image:', error);
@@ -266,27 +289,30 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
 // DELETE /user/self/pic
 router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
-        // Retrieve the user's current profile image details
+        // Check if the user exists
         const user = await AppUser.findOne({ where: { id: req.user.id } });
 
-        if (!user || !user.profile_image_url) {
-            return res.status(404).json({ message: 'No profile image to delete.' });
+        if (!user) {
+            return res.status(400).json();
+        }
+
+        // Retrieve the user's current profile image details
+        const userImage = await UserImage.findOne({ where: { userId: req.user.id } });
+
+        if (!userImage) {
+            return res.status(400).json();
         }
 
         // Delete the image from S3
         const params = {
             Bucket: process.env.S3_BUCKET_NAME, // Ensure your bucket name is set in your environment variables
-            Key: user.profile_image_url.split('/').pop() // Extract the file name from the URL
+            Key: userImage.url.split('/').pop() // Extract the file name from the URL
         };
 
         await s3.deleteObject(params).promise();
 
-        // Delete the image record from the database
-        await AppUser.update({
-            profile_image_file_name: null,
-            profile_image_url: null,
-            profile_image_upload_date: null,
-        }, { where: { id: req.user.id } });
+        // Delete the image record from the UserImage table
+        await UserImage.destroy({ where: { userId: req.user.id } });
 
         return res.status(204).send(); // No Content
     } catch (error) {
