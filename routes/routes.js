@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const AppUser = require('../models/user.js');  // Changed User to AppUser
 const sequelize = require('../config/config.js');
 const { Op } = require('sequelize');
-const express = require('express');
 const AWS = require('aws-sdk');
 const multer = require('multer'); // Assuming you're using multer for file uploads
 
