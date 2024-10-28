@@ -2,6 +2,7 @@ const request = require('supertest');
 const app = require('../app'); // Ensure the correct path to app.js
 const sequelize = require('../config/config.js'); // Adjust the path as needed
 const AppUser = require('../models/user'); // Adjust path to the AppUser model
+const UserImage = require('../models/userImage');
 
 // Mock the AWS SDK to prevent S3 errors during tests
 jest.mock('aws-sdk', () => {
@@ -20,14 +21,16 @@ describe('User Routes Integration Test', () => {
 
     beforeAll(async () => {
         try {
-            // Drop the AppUsers table if it exists
-            await sequelize.getQueryInterface().dropTable('AppUsers'); // Drop table if exists
+            // Drop both tables (ensure you drop dependent tables first)
+            await sequelize.getQueryInterface().dropTable('UserImages'); // Drop dependent table first
+            await sequelize.getQueryInterface().dropTable('AppUsers'); // Then drop the main table
+    
             // Synchronize the database with the models
-            await sequelize.sync({ force: true }); // Use force: true to drop and recreate tables
+            await AppUser.sync(); // Sync dependency table first
+            await UserImage.sync(); // Then sync the dependent table
             console.log('Database synchronized successfully.');
         } catch (error) {
-            console.error('Error setting up database:', error.message || error);
-            process.exit(1); // Exit if there's a setup failure
+            console.error('Error resetting database:', error.message || error);
         }
     });
 
