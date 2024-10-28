@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const AppUser = require('../models/user.js');  // Changed User to AppUser
+const UserImage = require('../models/userImage.js');
 const sequelize = require('../config/config.js');
 const { Op } = require('sequelize');
 const AWS = require('aws-sdk');
