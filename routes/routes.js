@@ -228,7 +228,7 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
         // Set S3 upload parameters
         const s3Params = {
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: `${req.user.id}/${Date.now()}_${file.originalname}`, // Unique key for each image
+            Key: `${req.user.id}`, // Unique key for each image
             Body: file.buffer,
             ContentType: file.mimetype,
         };
@@ -259,7 +259,6 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
 });
 
 
-
 // GET /user/self/pic
 router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
@@ -282,7 +281,7 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
             profile_image_upload_date: userImage.profile_image_upload_date, // Correct attribute name
             user_id: userImage.userId // User ID
         });
-        
+
     } catch (error) {
         console.error('Error retrieving image:', error);
         return res.status(500).json({ message: 'Internal server error' });
@@ -307,7 +306,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
         // Delete the image from S3
         const params = {
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: userImage.profile_image_url.split(`${process.env.S3_BUCKET_NAME}/`)[1] // Extract the key from the URL
+            Key: req.user.id        
         };
 
         await s3.deleteObject(params).promise();
