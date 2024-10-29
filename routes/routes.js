@@ -209,14 +209,9 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 
 // POST /user/self/pic
 router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profilePic'), async (req, res) => {
-    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
     if (Object.keys(req.query).length > 0) {
         return res.status(400).json();
-    }
-
-    if (contentLength > 0) {
-        return res.status(400).send('');
     }
 
     try {
@@ -325,15 +320,11 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
 
 // DELETE /user/self/pic
 router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
-    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
     if (Object.keys(req.query).length > 0) {
         return res.status(400).json();
     }
-
-    if (contentLength > 0) {
-        return res.status(400).send('');
-    }
+    
     try {
         // Check if the user exists
         const user = await AppUser.findOne({ where: { id: req.user.id } });
