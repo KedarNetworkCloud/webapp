@@ -324,7 +324,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
     if (Object.keys(req.query).length > 0) {
         return res.status(400).json();
     }
-    
+
     try {
         // Check if the user exists
         const user = await AppUser.findOne({ where: { id: req.user.id } });
