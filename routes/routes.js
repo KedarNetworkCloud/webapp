@@ -228,7 +228,7 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
         // Set S3 upload parameters
         const s3Params = {
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: `${req.user.id}`, // Unique key for each image
+            Key: `${req.user.id}/${file.originalname}`, // Key is now userId/fileName
             Body: file.buffer,
             ContentType: file.mimetype,
         };
@@ -257,6 +257,7 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
         return res.status(500).json();
     }
 });
+
 
 
 // GET /user/self/pic
@@ -303,12 +304,13 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
             return res.status(404).json();
         }
 
-        // Delete the image from S3
+        // Construct the key for deletion
         const params = {
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: req.user.id        
+            Key: `${req.user.id}/${userImage.profile_image_file_name}`, // Use user ID and file name
         };
 
+        // Delete the image from S3
         await s3.deleteObject(params).promise();
 
         // Delete the image record from the UserImage table
