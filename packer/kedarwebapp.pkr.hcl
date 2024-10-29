@@ -62,6 +62,7 @@ build {
     scripts = [
       "../installNodejs.sh",
       "../installDependencies.sh",
+      "../installCloudWatchAgent.sh",
       "../webServiceFile.sh"
     ]
   }

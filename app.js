@@ -25,6 +25,11 @@ application.head('/healthz', checkDBMiddleware, async (req, res) => {
 });
 
 application.get('/healthz', checkDBMiddleware, async (req, res) => {
+    const startTime = Date.now();
+
+    // Send count of healthz API calls
+    statsd.increment('healthz_api_call_count'); // This sends the count to StatsD, which can be configured to forward to CloudWatch
+
     let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
     if (Object.keys(req.query).length > 0) {
@@ -32,11 +37,16 @@ application.get('/healthz', checkDBMiddleware, async (req, res) => {
     }
 
     if (contentLength === 0) {
+        const duration = Date.now() - startTime; // Calculate duration
+        statsd.timing('healthz_api_response_time', duration); // Send timing metric
         return res.status(200).set('Cache-Control', 'no-cache').send();
     } else if (contentLength > 0) {
+        const duration = Date.now() - startTime; // Calculate duration
+        statsd.timing('healthz_api_response_time', duration); // Send timing metric
         return res.status(400).send('');
     }
 });
+
 
 application.all('/healthz', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
