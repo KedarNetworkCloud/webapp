@@ -39,6 +39,10 @@ router.head('/user/self', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
+router.head('/user/self/pic', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send();
+});
+
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
 
@@ -177,19 +181,26 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 // Get user details
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
     try {
+        let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
+
         if (Object.keys(req.query).length > 0) {
             return res.status(400).json();
         }
+    
+        if (contentLength === 0) {
+            res.set('Cache-Control', 'no-cache');
+            return res.status(200).json({
+                id: req.user.id,
+                email: req.user.email,
+                firstName: req.user.firstName,
+                lastName: req.user.lastName,
+                account_created: req.user.account_created,
+                account_updated: req.user.account_updated,
+            });
+        } else if (contentLength > 0) {
+            return res.status(400).send('');
+        }
 
-        res.set('Cache-Control', 'no-cache');
-        return res.status(200).json({
-            id: req.user.id,
-            email: req.user.email,
-            firstName: req.user.firstName,
-            lastName: req.user.lastName,
-            account_created: req.user.account_created,
-            account_updated: req.user.account_updated,
-        });
     } catch (error) {
         console.error('Error retrieving user:', error);
         return res.status(500).json({ message: 'Internal server error' });
@@ -198,7 +209,16 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 
 // POST /user/self/pic
 router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profilePic'), async (req, res) => {
-    console.log("Uploading image");
+    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
+
+    if (Object.keys(req.query).length > 0) {
+        return res.status(400).json();
+    }
+
+    if (contentLength > 0) {
+        return res.status(400).send('');
+    }
+
     try {
         const { file } = req;
 
@@ -239,10 +259,16 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
         // Create a new entry in the UserImage table
         const newImage = await UserImage.create({
             profile_image_file_name: file.originalname,
-            profile_image_url: uploadResult.Location,
+            // Store the URL in the desired format
+            profile_image_url: `${process.env.S3_BUCKET_NAME}/${req.user.id}/${file.originalname}`, // Custom URL format
             profile_image_upload_date: new Date().toISOString(),
             userId: req.user.id, // Associate this image with the user
         });
+
+        await AppUser.update(
+            { account_updated: new Date() },
+            { where: { id: req.user.id } }
+        );
 
         // Return the uploaded image details in the response
         return res.status(201).json({
@@ -259,9 +285,17 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
 });
 
 
-
 // GET /user/self/pic
 router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
+    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
+
+    if (Object.keys(req.query).length > 0) {
+        return res.status(400).json();
+    }
+
+    if (contentLength > 0) {
+        return res.status(400).send('');
+    }
     try {
         // Retrieve the user's profile image details from UserImage table
         const userImage = await UserImage.findOne({
@@ -291,6 +325,15 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
 
 // DELETE /user/self/pic
 router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
+    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
+
+    if (Object.keys(req.query).length > 0) {
+        return res.status(400).json();
+    }
+
+    if (contentLength > 0) {
+        return res.status(400).send('');
+    }
     try {
         // Check if the user exists
         const user = await AppUser.findOne({ where: { id: req.user.id } });
@@ -315,6 +358,10 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
 
         // Delete the image record from the UserImage table
         await UserImage.destroy({ where: { userId: req.user.id } });
+        await AppUser.update(
+            { account_updated: new Date() },
+            { where: { id: req.user.id } }
+        );
 
         return res.status(204).send(); // No Content
     } catch (error) {
@@ -330,6 +377,10 @@ router.all('/user', checkDBMiddleware, async (req, res) => {
 });
 
 router.all('/user/self', checkDBMiddleware, async (req, res) => {
+    return res.status(405).set('Cache-Control', 'no-cache').send();
+});
+
+router.all('/user/self/pic', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
