@@ -5,8 +5,8 @@
           "collect_list": [
             {
               "file_path": "/opt/myapp/logs/app.log",
-              "log_group_name": "YourLogGroupName",
-              "log_stream_name": "{instance_id}",
+              "log_group_name": "myAppLogs",
+              "log_stream_name": "myAppLogs-Demo",
               "timezone": "UTC"
             }
           ]
