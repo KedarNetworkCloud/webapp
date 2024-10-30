@@ -1,14 +1,22 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+const StatsD = require('node-statsd');
 const express = require('express');
 const sequelize = require('./config/config.js');
 const application = express();
 const { router: newUserRoutes, checkDBConnection } = require('./routes/routes.js');
-const logger = require('./logger'); // Import logger
+const logger = require('./logger');
 application.use(express.json());
 const AppUsers = require('./models/user.js');
 const UserImages = require('./models/userImage.js');
+const statsDConfig = require('./config/statsDconfig.json');
+
+// Configure StatsD client
+const statsdClient = new StatsD({
+    host: 'localhost', // StatsD host (typically localhost if running CloudWatch Agent on the same EC2 instance)
+    port: statsDConfig.port         // Default StatsD port
+});
 
 // Middleware to check DB connection
 const checkDBMiddleware = async (req, res, next) => {
@@ -16,42 +24,57 @@ const checkDBMiddleware = async (req, res, next) => {
         await sequelize.authenticate();
         next();
     } catch (error) {
-        logger.error('Database server error.'); // Log bad request response
+        logger.error('Database server error.');
         return res.status(503).set('Cache-Control', 'no-cache').send();
     }
 };
 
-// Health check routes
-application.head('/healthz', checkDBMiddleware, async (req, res) => {
-    logger.error('Method not allowed.'); // Log bad request response
-    return res.status(405).set('Cache-Control', 'no-cache').send();
-});
+let healthCheckCounter = 0; // Initialize a counter for health check requests
 
-application.get('/healthz', checkDBMiddleware, async (req, res) => {
-    // Log incoming health check request
+const logMetricsMiddleware = async (req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+
+        // Increment the local counter for health check requests
+        if (req.path === '/healthz') {
+            healthCheckCounter++;
+        }
+
+        // Metric 1: Increment the request count for /healthz endpoint in StatsD
+        statsdClient.increment('healthz.request_count');
+
+        // Metric 2: Record the duration of /healthz requests
+        statsdClient.timing('healthz.response_time', duration);
+
+        // Log the metrics, including the local counter
+        logger.info(`Logged metrics: count for /healthz is ${healthCheckCounter}, duration: ${duration}ms`);
+    });
+    next();
+};
+
+// Health check routes with metrics middleware
+application.get('/healthz', checkDBMiddleware, logMetricsMiddleware, async (req, res) => {
     logger.info('Received health check request.');
 
     let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
-    // Check for query parameters in the request
     if (Object.keys(req.query).length > 0) {
-        logger.warn('Health check request contains query parameters.'); // Log query parameters presence
+        logger.warn('Health check request contains query parameters.');
         return res.status(400).json();
     }
 
-    // Check for the content length to determine response status
     if (contentLength === 0) {
-        logger.info('Health check response: 200 OK.'); // Log successful response
+        logger.info('Health check response: 200 OK.');
         return res.status(200).set('Cache-Control', 'no-cache').send();
     } else if (contentLength > 0) {
-        logger.error('Health check response: 400 Bad Request.'); // Log bad request response
+        logger.error('Health check response: 400 Bad Request.');
         return res.status(400).send('');
     }
 });
 
-
-application.all('/healthz', checkDBMiddleware, async (req, res) => {
-    logger.error('Invalid route.'); // Log bad request response
+application.all('/healthz', checkDBMiddleware, logMetricsMiddleware, async (req, res) => {
+    logger.error('Invalid route.');
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
@@ -62,8 +85,8 @@ application.use('/v1', checkDBMiddleware, newUserRoutes);
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        await AppUsers.sync(); // Sync dependency table first
-        await UserImages.sync(); // Then sync the dependent table
+        await AppUsers.sync();
+        await UserImages.sync();
         logger.info('Database synced successfully.');
 
         const port = process.env.APP_PORT || 8080;
