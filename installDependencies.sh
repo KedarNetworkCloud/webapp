@@ -11,4 +11,7 @@ sudo npm install dotenv
 sudo npm install multer
 sudo npm install multer-s3
 sudo npm install aws-sdk
+sudo npm install node-statsd
+sudo npm install winston
+sudo npm install logger
 
