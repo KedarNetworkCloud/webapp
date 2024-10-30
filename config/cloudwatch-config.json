@@ -6,7 +6,7 @@
             {
               "file_path": "/opt/myapp/logs/app.log",
               "log_group_name": "myAppLogs",
-              "log_stream_name": "myAppLogs-Demo",
+              "log_stream_name": "myAppLogs-Demo-{instance_id}",
               "timezone": "UTC"
             }
           ]

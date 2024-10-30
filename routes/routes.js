@@ -6,6 +6,9 @@ const sequelize = require('../config/config.js');
 const { Op } = require('sequelize');
 const AWS = require('aws-sdk');
 const multer = require('multer'); // Assuming you're using multer for file uploads
+const StatsD = require('node-statsd');
+const statsdConfig = require('../config/statsDconfig.json'); // Adjust the path to your config file
+const statsd = new StatsD({ host: statsdConfig.host, port: statsdConfig.port });
 
 const upload = multer({ /* Multer configuration */ });
 const router = express.Router();
@@ -26,6 +29,7 @@ async function checkDBConnection() {
 const checkDBMiddleware = async (req, res, next) => {
     const dbConnectionStatus = await checkDBConnection();
     if (!dbConnectionStatus) {
+        logger.error('Database connectivity error.'); // Log bad request response
         return res.status(503).json();
     }
     next();
@@ -75,6 +79,7 @@ const authMiddleware = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
+        logger.error("Error during User Authentication via basic auth.")
         console.error('Error during authentication:', error);
         return res.status(500).json();
     }
@@ -139,6 +144,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             account_updated: newUser.account_updated,
         });
     } catch (error) {
+        logger.error("Error during creating user.")
         console.error('Error creating user:', error);
         return res.status(500).json();
     }
@@ -180,6 +186,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         return res.status(204).send(); 
 
     } catch (error) {
+        logger.error('Error updating user.'); // Log bad request response
         console.error('Error updating user:', error);
         return res.status(500).json();
     }
@@ -217,6 +224,7 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
 
 // POST /user/self/pic
 router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profilePic'), async (req, res) => {
+    const startTime = process.hrtime(); // Start timing
 
     if (Object.keys(req.query).length > 0) {
         return res.status(400).json();
@@ -256,13 +264,16 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
             ContentType: file.mimetype,
         };
 
+        // Measure S3 upload start time
+        const s3StartTime = process.hrtime();
         // Upload to S3
         const uploadResult = await s3.upload(s3Params).promise();
+        const s3EndTime = process.hrtime(s3StartTime); // Measure S3 upload end time
+        const s3Duration = (s3EndTime[0] * 1e9 + s3EndTime[1]) / 1e6; // Convert to milliseconds
 
         // Create a new entry in the UserImage table
         const newImage = await UserImage.create({
             profile_image_file_name: file.originalname,
-            // Store the URL in the desired format
             profile_image_url: `${process.env.S3_BUCKET_NAME}/${req.user.id}/${file.originalname}`, // Custom URL format
             profile_image_upload_date: new Date().toISOString(),
             userId: req.user.id, // Associate this image with the user
@@ -272,7 +283,16 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
             { account_updated: new Date() },
             { where: { id: req.user.id } }
         );
-        logger.info('Profile Image posted in the S3 bucket for authenticated user.'); // Log bad request response
+
+        // Calculate total execution time
+        const endTime = process.hrtime(startTime);
+        const totalExecutionTime = (endTime[0] * 1e9 + endTime[1]) / 1e6; // Convert to milliseconds
+
+        // Log metrics to StatsD
+        statsd.timing('api.user.self.pic.execution_time', totalExecutionTime);
+        statsd.timing('api.user.self.pic.s3_upload_time', s3Duration);
+
+        logger.info('Profile Image posted in the S3 bucket for authenticated user.');
         // Return the uploaded image details in the response
         return res.status(201).json({
             profile_image_file_name: newImage.profile_image_file_name,
@@ -281,6 +301,7 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
             profile_image_upload_date: newImage.profile_image_upload_date,
             user_id: newImage.userId,
         });
+
     } catch (error) {
         console.error('Error uploading image:', error);
         return res.status(500).json();
