@@ -37,16 +37,25 @@ const checkDBMiddleware = async (req, res, next) => {
 
 // User route definitions
 router.head('/user', checkDBMiddleware, async (req, res) => {
+    statsd.increment('api.calls.unallowed.method.atuser');  // Increment API call count
+    const apiStartTime = Date.now();
+    statsd.timing('api.response_time.bad_request.atuser', Date.now() - apiStartTime);
     logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.head('/user/self', checkDBMiddleware, async (req, res) => {
+    statsd.increment('api.calls.unallowed.method.atuser/self');  // Increment API call count
+    const apiStartTime = Date.now();
+    statsd.timing('api.response_time.bad_request.atuser/self', Date.now() - apiStartTime);
     logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.head('/user/self/pic', checkDBMiddleware, async (req, res) => {
+    statsd.increment('api.calls.unallowed.method.atuser/self/pic');  // Increment API call count
+    const apiStartTime = Date.now();
+    statsd.timing('api.response_time.bad_request.atuser/self/pic', Date.now() - apiStartTime);
     logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
@@ -63,9 +72,15 @@ const authMiddleware = async (req, res, next) => {
     const [email, password] = credentials.split(':');
 
     try {
-        const user = await AppUser.findOne({  // Changed User to AppUser
+        // Start timing the database query
+        const dbQueryStartTime = Date.now();
+
+        const user = await AppUser.findOne({
             where: { email: { [Op.iLike]: email } }
         });
+
+        // Record the time taken for the database query
+        statsd.timing('db.query_time.authMiddleware', Date.now() - dbQueryStartTime);
 
         if (!user) {
             return res.status(401).json();
@@ -79,16 +94,21 @@ const authMiddleware = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
-        logger.error("Error during User Authentication via basic auth.")
+        logger.error("Error during User Authentication via basic auth.");
         console.error('Error during authentication:', error);
         return res.status(500).json();
     }
 };
 
+
 // Create user
 router.post('/user', checkDBMiddleware, async (req, res) => {
+    const startTime = Date.now(); // Start measuring execution time
     const { first_name, last_name, password, email } = req.body;
     res.set('Cache-Control', 'no-cache');
+
+    // API Counter
+    statsd.increment('api.user.create.counter');
 
     const allowedFields = ['first_name', 'last_name', 'password', 'email', 'account_created', 'account_updated'];
     
@@ -120,21 +140,33 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             return res.status(400).json();
         }
 
-        const existingUser = await AppUser.findOne({ where: { email } });  // Changed User to AppUser
+        // Measure DB Query Time for existing user check
+        const dbStartTime = Date.now();
+        const existingUser = await AppUser.findOne({ where: { email } });
+        const dbQueryTime = Date.now() - dbStartTime; // Calculate time taken for the DB query
+        statsd.timing('api.user.create.db.query.time', dbQueryTime); // Log DB query time
+
         if (existingUser) {
             return res.status(400).json();
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = await AppUser.create({  // Changed User to AppUser
+        // Measure DB Query Time for user creation
+        const userCreationStartTime = Date.now();
+        const newUser = await AppUser.create({
             email,
             password: hashedPassword,
             firstName: first_name,
             lastName: last_name,
         });
+        const userCreationTime = Date.now() - userCreationStartTime; // Calculate time taken for the DB operation
+        statsd.timing('api.user.create.db.creation.time', userCreationTime); // Log user creation time
 
         logger.info('New User created.'); // Log bad request response
+        const executionTime = Date.now() - startTime; // Calculate total execution time
+        statsd.timing('api.user.create.execution.time', executionTime); // Log total execution time
+
         return res.status(201).json({
             id: newUser.id,
             email: newUser.email,
@@ -150,10 +182,15 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
     }
 });
 
+
 // Update user
 router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
+    const startTime = Date.now(); // Start measuring execution time
     const { first_name, last_name, password } = req.body;
     res.set('Cache-Control', 'no-cache');
+
+    // API Counter
+    statsd.increment('api.user.update.counter');
 
     const fieldsAllowedToBeUpdated = ['first_name', 'last_name', 'password'];
     for (let key in req.body) {
@@ -171,6 +208,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         if (Object.keys(req.query).length > 0) {
             return res.status(400).json();
         }
+
         const user = req.user;
 
         if (first_name) user.firstName = first_name;
@@ -181,8 +219,17 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
             user.password = await bcrypt.hash(password, salt);
         }
 
+        // Measure DB Query Time for user update
+        const dbUpdateStartTime = Date.now();
         await user.save();
+        const dbUpdateTime = Date.now() - dbUpdateStartTime; // Calculate time taken for the DB operation
+        statsd.timing('api.user.update.db.save.time', dbUpdateTime); // Log DB update time
+
         logger.info('Authenticated User information updated.'); // Log bad request response
+
+        const executionTime = Date.now() - startTime; // Calculate total execution time
+        statsd.timing('api.user.update.execution.time', executionTime); // Log total execution time
+
         return res.status(204).send(); 
 
     } catch (error) {
@@ -192,8 +239,14 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     }
 });
 
+
 // Get user details
 router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => {
+    const startTime = Date.now(); // Start measuring execution time
+
+    // API Counter
+    statsd.increment('api.user.get.counter');
+
     try {
         let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
 
@@ -203,15 +256,25 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     
         if (contentLength === 0) {
             res.set('Cache-Control', 'no-cache');
-            logger.info('Authenticated User information retrieved.'); // Log bad request response
-            return res.status(200).json({
+
+            // Measure DB Query Time for user retrieval
+            const dbQueryStartTime = Date.now();
+            const userDetails = {
                 id: req.user.id,
                 email: req.user.email,
                 firstName: req.user.firstName,
                 lastName: req.user.lastName,
                 account_created: req.user.account_created,
                 account_updated: req.user.account_updated,
-            });
+            };
+            const dbQueryTime = Date.now() - dbQueryStartTime; // Calculate time taken for DB operation
+            statsd.timing('api.user.get.db.query.time', dbQueryTime); // Log DB query time
+
+            logger.info('Authenticated User information retrieved.'); // Log bad request response
+            const executionTime = Date.now() - startTime; // Calculate total execution time
+            statsd.timing('api.user.get.execution.time', executionTime); // Log total execution time
+            
+            return res.status(200).json(userDetails);
         } else if (contentLength > 0) {
             return res.status(400).send('');
         }
@@ -221,6 +284,7 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // POST /user/self/pic
 router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('profilePic'), async (req, res) => {
@@ -311,81 +375,89 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
 
 // GET /user/self/pic
 router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
-    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
+    statsd.increment('api.calls.GET_user_self_pic');  // Increment API call count
+    const apiStartTime = Date.now();
 
-    if (Object.keys(req.query).length > 0) {
-        return res.status(400).json();
-    }
-
-    if (contentLength > 0) {
-        return res.status(400).send('');
-    }
     try {
-        // Retrieve the user's profile image details from UserImage table
+        if (Object.keys(req.query).length > 0) {
+            return res.status(400).json();
+        }
+
+        // Database query to retrieve user image details
+        const dbQueryStart = Date.now();
         const userImage = await UserImage.findOne({
             where: { userId: req.user.id },
-            attributes: ['profile_image_file_name', 'profile_image_url', 'profile_image_upload_date', 'id', 'userId'] // Ensure these match your model
+            attributes: ['profile_image_file_name', 'profile_image_url', 'profile_image_upload_date', 'id', 'userId'],
         });
+        statsd.timing('db.query_time.GET_user_self_pic', Date.now() - dbQueryStart); // Log DB query time
 
-        // Check if the user image exists
+        // Check if image exists
         if (!userImage) {
             return res.status(404).json();
         }
-        logger.info('Profile Image retreived from the S3 bucket for authenticated user.'); // Log bad request response
-        // Prepare the response object
+
+        statsd.timing('api.response_time.GET_user_self_pic', Date.now() - apiStartTime);  // Log total API response time
         return res.status(200).json({
-            profile_image_file_name: userImage.profile_image_file_name, // Correct attribute name
-            id: userImage.id, // Image ID
-            profile_image_url: userImage.profile_image_url, // Correct attribute name
-            profile_image_upload_date: userImage.profile_image_upload_date, // Correct attribute name
-            user_id: userImage.userId // User ID
+            profile_image_file_name: userImage.profile_image_file_name,
+            id: userImage.id,
+            profile_image_url: userImage.profile_image_url,
+            profile_image_upload_date: userImage.profile_image_upload_date,
+            user_id: userImage.userId,
         });
 
     } catch (error) {
         console.error('Error retrieving image:', error);
+        statsd.increment('api.errors.GET_user_self_pic');
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
+
 // DELETE /user/self/pic
 router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res) => {
-
-    if (Object.keys(req.query).length > 0) {
-        return res.status(400).json();
-    }
+    statsd.increment('api.calls.DELETE_user_self_pic');  // Increment API call count
+    const apiStartTime = Date.now();
 
     try {
+        if (Object.keys(req.query).length > 0) {
+            return res.status(400).json();
+        }
+
         // Check if the user exists
+        const dbUserCheckStart = Date.now();
         const user = await AppUser.findOne({ where: { id: req.user.id } });
+        statsd.timing('db.query_time.DELETE_user_self_pic', Date.now() - dbUserCheckStart);  // Log DB query time
+
         if (!user) {
             return res.status(404).json();
         }
 
-        // Retrieve the user's current profile image details
+        // Retrieve current profile image details
+        const dbImageCheckStart = Date.now();
         const userImage = await UserImage.findOne({ where: { userId: req.user.id } });
+        statsd.timing('db.query_time.DELETE_user_self_pic', Date.now() - dbImageCheckStart);  // Log DB query time
+
         if (!userImage) {
             return res.status(404).json();
         }
 
-        // Construct the key for deletion
-        const params = {
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: `${req.user.id}/${userImage.profile_image_file_name}`, // Use user ID and file name
-        };
-
-        // Delete the image from S3
+        // S3 delete operation
+        const s3DeleteStart = Date.now();
+        const params = { Bucket: process.env.S3_BUCKET_NAME, Key: `${req.user.id}/${userImage.profile_image_file_name}` };
         await s3.deleteObject(params).promise();
+        statsd.timing('s3.delete_time.DELETE_user_self_pic', Date.now() - s3DeleteStart);  // Log S3 deletion time
 
-        // Delete the image record from the UserImage table
+        // Database deletion of image record
+        const dbDeleteStart = Date.now();
         await UserImage.destroy({ where: { userId: req.user.id } });
-        await AppUser.update(
-            { account_updated: new Date() },
-            { where: { id: req.user.id } }
-        );
-        logger.info('Profile Image deleted in the S3 bucket for authenticated user.'); // Log bad request response
-        return res.status(204).send(); // No Content
+        statsd.timing('db.query_time.DELETE_user_self_pic', Date.now() - dbDeleteStart);  // Log DB query time for deletion
+
+        statsd.timing('api.response_time.DELETE_user_self_pic', Date.now() - apiStartTime);  // Log total API response time
+        return res.status(204).send();  // No Content
+
     } catch (error) {
         console.error('Error deleting image:', error);
+        statsd.increment('api.errors.DELETE_user_self_pic');
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
@@ -393,22 +465,39 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
 
 // Additional route definitions for user
 router.all('/user', checkDBMiddleware, async (req, res) => {
-    logger.error('Method not allowed.'); // Log bad request response
+    statsd.increment('api.calls.all_user');  // Increment API call count
+    const apiStartTime = Date.now();
+
+    logger.error('Method not allowed.');  // Log bad request response
+    statsd.timing('api.response_time.all_user', Date.now() - apiStartTime);  // Log total API response time
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.all('/user/self', checkDBMiddleware, async (req, res) => {
-    logger.error('Method not allowed.'); // Log bad request response
+    statsd.increment('api.calls.all_user_self');  // Increment API call count
+    const apiStartTime = Date.now();
+
+    logger.error('Method not allowed.');  // Log bad request response
+    statsd.timing('api.response_time.all_user_self', Date.now() - apiStartTime);  // Log total API response time
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.all('/user/self/pic', checkDBMiddleware, async (req, res) => {
-    logger.error('Method not allowed.'); // Log bad request response
+    statsd.increment('api.calls.all_user_self_pic');  // Increment API call count
+    const apiStartTime = Date.now();
+
+    logger.error('Method not allowed.');  // Log bad request response
+    statsd.timing('api.response_time.all_user_self_pic', Date.now() - apiStartTime);  // Log total API response time
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
+// 404 route handler for bad requests
 router.use((req, res) => {
-    logger.error('Bad Request.'); // Log bad request response
+    statsd.increment('api.calls.bad_request');  // Increment API call count
+    const apiStartTime = Date.now();
+
+    logger.error('Bad Request.');  // Log bad request response
+    statsd.timing('api.response_time.bad_request', Date.now() - apiStartTime);  // Log total API response time
     return res.status(404).json();
 });
 
