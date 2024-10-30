@@ -1,24 +1,16 @@
 const winston = require('winston');
-const WinstonCloudWatch = require('winston-cloudwatch');
-const AWS = require('aws-sdk');
+const path = require('path');
 
-// Configure AWS SDK with region
-AWS.config.update({ region: 'us-east-1' }); // Set your region
-
-// Create a CloudWatchLogs instance
-const cloudWatchLogs = new AWS.CloudWatchLogs();
-
-// Create a logger
+// Create a logger that writes to a file
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
     transports: [
-        new WinstonCloudWatch({
-            logGroupName: 'myAppLogs', // Set your log group name
-            logStreamName: 'myAppLogs-Demo', // Set your log stream name
-            awsRegion: 'us-east-1', // Set your region
-            cloudWatchLogs: cloudWatchLogs,
-        })
+        new winston.transports.File({
+            filename: path.join('/opt/myapp/logs/app.log'), // Specify the file path
+            level: 'info', // Log level
+        }),
+        new winston.transports.Console() // Optional: log to console as well
     ]
 });
 
@@ -28,5 +20,3 @@ logger.error('This is an error log');
 
 // Export the logger instance
 module.exports = logger;
-
-
