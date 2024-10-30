@@ -14,4 +14,5 @@ sudo npm install aws-sdk
 sudo npm install node-statsd
 sudo npm install winston
 sudo npm install logger
+sudo npm install winston-cloudwatch
 
