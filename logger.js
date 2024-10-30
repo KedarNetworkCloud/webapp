@@ -26,4 +26,7 @@ const logger = winston.createLogger({
 logger.info('This is an info log');
 logger.error('This is an error log');
 
+// Export the logger instance
+module.exports = logger;
+
 
