@@ -4,18 +4,6 @@ const sequelize = require('../config/config.js'); // Adjust the path as needed
 const AppUser = require('../models/user'); // Adjust path to the AppUser model
 const UserImage = require('../models/userImage');
 
-// Mock the AWS SDK to prevent S3 errors during tests
-jest.mock('aws-sdk', () => {
-    const mockS3 = {
-        upload: jest.fn().mockReturnThis(),
-        promise: jest.fn().mockResolvedValue({ Location: 'mock-url' }),
-    };
-
-    return {
-        S3: jest.fn(() => mockS3),
-    };
-});
-
 describe('User Routes Integration Test', () => {
     const userEmail = 'johnd9@example.com'; // Store the created user's email for cleanup
 
@@ -24,7 +12,7 @@ describe('User Routes Integration Test', () => {
             // Drop both tables (ensure you drop dependent tables first)
             await sequelize.getQueryInterface().dropTable('UserImages'); // Drop dependent table first
             await sequelize.getQueryInterface().dropTable('AppUsers'); // Then drop the main table
-    
+
             // Synchronize the database with the models
             await AppUser.sync(); // Sync dependency table first
             await UserImage.sync(); // Then sync the dependent table
