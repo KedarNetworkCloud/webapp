@@ -9,6 +9,7 @@ const multer = require('multer'); // Assuming you're using multer for file uploa
 
 const upload = multer({ /* Multer configuration */ });
 const router = express.Router();
+const logger = require('../logger'); // Import logger
 const s3 = new AWS.S3(); // Create an S3 instance
 
 // Check DB connection function
@@ -32,14 +33,17 @@ const checkDBMiddleware = async (req, res, next) => {
 
 // User route definitions
 router.head('/user', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.head('/user/self', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.head('/user/self/pic', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
@@ -87,10 +91,12 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
     const invalidFields = requestFields.filter(field => !allowedFields.includes(field));
 
     if (invalidFields.length > 0) {
+        logger.error('Invalid fields included.'); // Log bad request response
         return res.status(400).json();
     }
 
     if (!first_name || !last_name || !password || !email) {
+        logger.error('Required fields missing.'); // Log bad request response
         return res.status(400).json();
     }
 
@@ -123,6 +129,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             lastName: last_name,
         });
 
+        logger.info('New User created.'); // Log bad request response
         return res.status(201).json({
             id: newUser.id,
             email: newUser.email,
@@ -169,7 +176,7 @@ router.put('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
         }
 
         await user.save();
-
+        logger.info('Authenticated User information updated.'); // Log bad request response
         return res.status(204).send(); 
 
     } catch (error) {
@@ -189,6 +196,7 @@ router.get('/user/self', checkDBMiddleware, authMiddleware, async (req, res) => 
     
         if (contentLength === 0) {
             res.set('Cache-Control', 'no-cache');
+            logger.info('Authenticated User information retrieved.'); // Log bad request response
             return res.status(200).json({
                 id: req.user.id,
                 email: req.user.email,
@@ -264,7 +272,7 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
             { account_updated: new Date() },
             { where: { id: req.user.id } }
         );
-
+        logger.info('Profile Image posted in the S3 bucket for authenticated user.'); // Log bad request response
         // Return the uploaded image details in the response
         return res.status(201).json({
             profile_image_file_name: newImage.profile_image_file_name,
@@ -302,7 +310,7 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
         if (!userImage) {
             return res.status(404).json();
         }
-
+        logger.info('Profile Image retreived from the S3 bucket for authenticated user.'); // Log bad request response
         // Prepare the response object
         return res.status(200).json({
             profile_image_file_name: userImage.profile_image_file_name, // Correct attribute name
@@ -353,7 +361,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
             { account_updated: new Date() },
             { where: { id: req.user.id } }
         );
-
+        logger.info('Profile Image deleted in the S3 bucket for authenticated user.'); // Log bad request response
         return res.status(204).send(); // No Content
     } catch (error) {
         console.error('Error deleting image:', error);
@@ -364,18 +372,22 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
 
 // Additional route definitions for user
 router.all('/user', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.all('/user/self', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.all('/user/self/pic', checkDBMiddleware, async (req, res) => {
+    logger.error('Method not allowed.'); // Log bad request response
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
 router.use((req, res) => {
+    logger.error('Bad Request.'); // Log bad request response
     return res.status(404).json();
 });
 
