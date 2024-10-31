@@ -29,26 +29,22 @@ const checkDBMiddleware = async (req, res, next) => {
     }
 };
 
-let healthCheckCounter = 0; // Initialize a counter for health check requests
-
 const logMetricsMiddleware = async (req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
         const duration = Date.now() - start;
 
-        // Increment the local counter for health check requests
+        // Only track metrics if this is a /healthz request
         if (req.path === '/healthz') {
-            healthCheckCounter++;
+            // Metric 1: Increment the request count for /healthz endpoint in StatsD
+            statsdClient.increment('healthz.request_count');
+
+            // Metric 2: Record the duration of /healthz requests
+            statsdClient.timing('healthz.response_time', duration);
+
+            // Log the metrics directly
+            logger.info(`Logged metrics: duration of /healthz request: ${duration}ms`);
         }
-
-        // Metric 1: Increment the request count for /healthz endpoint in StatsD
-        statsdClient.increment('healthz.request_count');
-
-        // Metric 2: Record the duration of /healthz requests
-        statsdClient.timing('healthz.response_time', duration);
-
-        // Log the metrics, including the local counter
-        logger.info(`Logged metrics: count for /healthz is ${healthCheckCounter}, duration: ${duration}ms`);
     });
     next();
 };
