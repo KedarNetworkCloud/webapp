@@ -83,11 +83,13 @@ const authMiddleware = async (req, res, next) => {
         statsd.timing('db.query_time.authMiddleware', Date.now() - dbQueryStartTime);
 
         if (!user) {
+            logger.error("No such user exists.");
             return res.status(401).json();
         }
 
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
+            logger.error("Password doesn't match.");
             return res.status(401).json();
         }
 
@@ -359,10 +361,10 @@ router.post('/user/self/pic', checkDBMiddleware, authMiddleware, upload.single('
         logger.info('Profile Image posted in the S3 bucket for authenticated user.');
         // Return the uploaded image details in the response
         return res.status(201).json({
-            profile_image_file_name: newImage.profile_image_file_name,
+            file_name: newImage.profile_image_file_name,
             id: newImage.id,
-            profile_image_url: newImage.profile_image_url,
-            profile_image_upload_date: newImage.profile_image_upload_date,
+            url: newImage.profile_image_url,
+            upload_date: newImage.profile_image_upload_date,
             user_id: newImage.userId,
         });
 
@@ -393,21 +395,22 @@ router.get('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, res)
 
         // Check if image exists
         if (!userImage) {
+            logger.error("User doesn't have an image");  // Log bad request response
             return res.status(404).json();
         }
 
         statsd.timing('api.response_time.GET_user_self_pic', Date.now() - apiStartTime);  // Log total API response time
         return res.status(200).json({
-            profile_image_file_name: userImage.profile_image_file_name,
+            file_name: userImage.profile_image_file_name,
             id: userImage.id,
-            profile_image_url: userImage.profile_image_url,
-            profile_image_upload_date: userImage.profile_image_upload_date,
+            url: userImage.profile_image_url,
+            upload_date: userImage.profile_image_upload_date,
             user_id: userImage.userId,
         });
 
     } catch (error) {
+        logger.error('Error retrieving image:');  // Log bad request response
         console.error('Error retrieving image:', error);
-        statsd.increment('api.errors.GET_user_self_pic');
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
@@ -429,6 +432,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
         statsd.timing('db.query_time.DELETE_user_self_pic', Date.now() - dbUserCheckStart);  // Log DB query time
 
         if (!user) {
+            logger.error("No such user exists");  // Log bad request response
             return res.status(404).json();
         }
 
@@ -438,6 +442,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
         statsd.timing('db.query_time.DELETE_user_self_pic', Date.now() - dbImageCheckStart);  // Log DB query time
 
         if (!userImage) {
+            logger.error("User doesn't have an image");  // Log bad request response
             return res.status(404).json();
         }
 
@@ -458,7 +463,6 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
     } catch (error) {
         console.error('Error deleting image:', error);
         logger.error('Error deleting image:');  // Log bad request response
-        statsd.increment('api.errors.DELETE_user_self_pic');
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
