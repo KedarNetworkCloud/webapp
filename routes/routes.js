@@ -457,6 +457,7 @@ router.delete('/user/self/pic', checkDBMiddleware, authMiddleware, async (req, r
 
     } catch (error) {
         console.error('Error deleting image:', error);
+        logger.error('Error deleting image:');  // Log bad request response
         statsd.increment('api.errors.DELETE_user_self_pic');
         return res.status(500).json({ message: 'Internal server error' });
     }

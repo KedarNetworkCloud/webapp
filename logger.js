@@ -14,9 +14,5 @@ const logger = winston.createLogger({
     ]
 });
 
-// Example usage of logger
-logger.info('This is an info log');
-logger.error('This is an error log');
-
 // Export the logger instance
 module.exports = logger;
