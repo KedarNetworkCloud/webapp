@@ -45,5 +45,5 @@ CODE DEMO - Assignment 5
 
 Assignment 05 - DB Seperated as RDS Instance - Final check
 
-Assignment 06 - DB Seperated as RDS Instance
+Assignment 06 - Using S3 Buckets to store User profile images and cloudwatch for logging and metrics
 
