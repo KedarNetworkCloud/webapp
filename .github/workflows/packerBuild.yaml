@@ -41,10 +41,17 @@ jobs:
       # 4. Run Packer Build (with machine-readable output)
       - name: Run Packer Build
         run: |
-          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
+          set -x  # Enable script debugging
+          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
         working-directory: ./packer  # Ensure correct working directory
-        
-      # 5. Set up AWS CLI (Demo account)
+
+      # 5. List files after Packer build
+      - name: List files after Packer build
+        run: |
+          ls -l ./packer  # List the files in the 'packer' directory
+        working-directory: ./packer  # Ensure correct working directory
+
+      # 6. Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -52,13 +59,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}
           aws-region: us-east-1  # Adjust based on your region
 
-      # 6. Set AMI ID from Packer output
+      # 7. Set AMI ID from Packer output
       - name: Set AMI ID from Packer output
         run: |
           AMI_ID=$(grep -oP '(?<=ami-)[\w\d]+' packer_output.txt | head -n 1)
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
 
-      # 7. Create New Launch Template Version (Demo)
+      # 8. Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
         run: |
           aws ec2 create-launch-template-version \
@@ -66,14 +73,14 @@ jobs:
             --version-description "New version with latest AMI" \
             --launch-template-data "ImageId=${{ env.AMI_ID }}"
 
-      # 8. Update ASG with Latest Launch Template Version (Demo)
+      # 9. Update ASG with Latest Launch Template Version (Demo)
       - name: Update ASG with Latest Launch Template Version (Demo)
         run: |
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$Latest"
+            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version='$Latest'"
 
-      # 9. Start Instance Refresh and Monitor (Demo)
+      # 10. Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
