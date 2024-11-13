@@ -42,7 +42,7 @@ jobs:
       - name: Run Packer Build
         id: packer-build
         run: |
-          packer build -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
+        packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
         working-directory: ./packer  # Ensure correct working directory
 
       # 5. Set up AWS CLI (Demo account)
