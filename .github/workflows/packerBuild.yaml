@@ -19,22 +19,83 @@ jobs:
         run: |
           zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
 
-      - name: Set up AWS CLI
+      # 1. Set up AWS CLI (Dev account)
+      - name: Set up AWS CLI (Dev account)
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_DEV_GIT_ROLE_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_DEV_GIT_ROLE_SECRET_ACCESS_KEY }}
           aws-region: us-east-1  # Adjust based on your region
 
+      # 2. Set up Packer
       - name: Set up Packer
         uses: hashicorp/setup-packer@v2
         with:
           version: latest
 
+      # 3. Initialize Packer
       - name: Initialize Packer
         run: packer init kedarwebapp.pkr.hcl
-        working-directory: ./packer  # Set the correct working directory for the Packer files
+        working-directory: ./packer  # Ensure correct working directory
 
+      # 4. Run Packer Build (with machine-readable output)
       - name: Run Packer Build
-        run: packer build kedarwebapp.pkr.hcl
-        working-directory: ./packer  # Ensure to set the correct working directory for the Packer files
+        id: packer-build
+        run: |
+          packer build -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
+        working-directory: ./packer  # Ensure correct working directory
+
+      # 5. Set up AWS CLI (Demo account)
+      - name: Set up AWS CLI (Demo account)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEMO_GIT_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Adjust based on your region
+
+      # 6. Set AMI ID from Packer output
+      - name: Set AMI ID from Packer output
+        run: |
+          AMI_ID=$(grep -oP '(?<=ami-)[\w\d]+' packer_output.txt | head -n 1)
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
+
+      # 7. Create New Launch Template Version (Demo)
+      - name: Create New Launch Template Version (Demo)
+        run: |
+          aws ec2 create-launch-template-version \
+            --launch-template-name kedar-web-app-launch-template \
+            --version-description "New version with latest AMI" \
+            --launch-template-data "ImageId=${{ env.AMI_ID }}"
+
+      # 8. Update ASG with Latest Launch Template Version (Demo)
+      - name: Update ASG with Latest Launch Template Version (Demo)
+        run: |
+          aws autoscaling update-auto-scaling-group \
+            --auto-scaling-group-name kedar-web-app-asg \
+            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version='$Latest'"
+
+      # 9. Start Instance Refresh and Monitor (Demo)
+      - name: Start Instance Refresh and Monitor (Demo)
+        run: |
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name kedar-web-app-asg \
+            --query 'InstanceRefreshId' \
+            --output text)
+          echo "Started instance refresh with ID $REFRESH_ID"
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name kedar-web-app-asg \
+              --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
+              --output text)
+            echo "Current refresh status: $STATUS"
+            if [[ "$STATUS" == "Successful" ]]; then
+              echo "Instance refresh completed successfully."
+              exit 0
+            elif [[ "$STATUS" == "Failed" || "$STATUS" == "Cancelled" ]]; then
+              echo "Instance refresh failed or was cancelled."
+              exit 1
+            else
+              echo "Instance refresh in progress. Checking again in 30 seconds..."
+              sleep 30
+            fi
+          done
