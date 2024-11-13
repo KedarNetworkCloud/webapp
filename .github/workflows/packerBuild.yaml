@@ -40,11 +40,10 @@ jobs:
 
       # 4. Run Packer Build (with machine-readable output)
       - name: Run Packer Build
-        id: packer-build
         run: |
-        packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
+          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt
         working-directory: ./packer  # Ensure correct working directory
-
+        
       # 5. Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
         uses: aws-actions/configure-aws-credentials@v2
@@ -72,7 +71,7 @@ jobs:
         run: |
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version='$Latest'"
+            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$Latest"
 
       # 9. Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
