@@ -9,6 +9,7 @@ const multer = require('multer'); // Assuming you're using multer for file uploa
 const StatsD = require('node-statsd');
 const statsdConfig = require('../config/statsDconfig.json'); // Adjust the path to your config file
 const statsd = new StatsD({ host: statsdConfig.host, port: statsdConfig.port });
+const sns = new AWS.SNS();
 
 const upload = multer({ /* Multer configuration */ });
 const router = express.Router();
@@ -60,6 +61,7 @@ router.head('/user/self/pic', checkDBMiddleware, async (req, res) => {
     return res.status(405).set('Cache-Control', 'no-cache').send();
 });
 
+
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
 
@@ -93,6 +95,12 @@ const authMiddleware = async (req, res, next) => {
             return res.status(401).json();
         }
 
+        // Check if the user is verified
+        if (!user.verified) {
+            logger.error("User is not verified.");
+            return res.status(403).json({ message: "User is not verified" });
+        }
+
         req.user = user;
         next();
     } catch (error) {
@@ -103,7 +111,7 @@ const authMiddleware = async (req, res, next) => {
 };
 
 
-// Create user
+
 router.post('/user', checkDBMiddleware, async (req, res) => {
     const startTime = Date.now(); // Start measuring execution time
     const { first_name, last_name, password, email } = req.body;
@@ -169,6 +177,24 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
         const executionTime = Date.now() - startTime; // Calculate total execution time
         statsd.timing('api.user.create.execution.time', executionTime); // Log total execution time
 
+        // Prepare the message for SNS
+        const snsMessage = {
+            Message: JSON.stringify({
+                email: newUser.email,
+                token: newUser.id // Assuming `id` is used as a user token
+            }),
+            TopicArn: process.env.SNS_TOPIC_ARN // The SNS topic ARN should be set in your environment variables
+        };
+
+        // Publish the message to SNS
+        sns.publish(snsMessage, (err, data) => {
+            if (err) {
+                console.error("Error publishing message to SNS:", err);
+            } else {
+                console.log("SNS message published successfully:", data);
+            }
+        });
+
         return res.status(201).json({
             id: newUser.id,
             email: newUser.email,
@@ -181,6 +207,44 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
         logger.error("Error during creating user.")
         console.error('Error creating user:', error);
         return res.status(500).json();
+    }
+});
+
+router.get('/verify', async (req, res) => {
+    const { user, token } = req.query;
+
+    // Validate query parameters
+    if (!user || !token) {
+        return res.status(400).json({ message: 'Invalid request. User and token are required.' });
+    }
+
+    try {
+        // Fetch user from the database using email
+        const userRecord = await AppUser.findOne({ where: { email: user } });
+
+        if (!userRecord) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Check if the token matches the user's ID
+        if (userRecord.id !== token) {
+            return res.status(400).json({ message: 'Invalid token.' });
+        }
+
+        // Check if the token is older than 2 minutes
+        const timeDifference = Date.now() - new Date(userRecord.account_created).getTime();
+        if (timeDifference > 2 * 60 * 1000) { // 2 minutes in milliseconds
+            return res.status(400).json({ message: 'Verification link expired.' });
+        }
+
+        // Mark the user as verified
+        userRecord.verified = true;
+        await userRecord.save();
+
+        return res.status(200).json({ message: 'User verified successfully.' });
+    } catch (error) {
+        console.error('Error during verification:', error);
+        return res.status(500).json({ message: 'Internal server error.' });
     }
 });
 
