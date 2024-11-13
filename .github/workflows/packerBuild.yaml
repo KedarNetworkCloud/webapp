@@ -43,18 +43,16 @@ jobs:
       # 5. Initialize Packer
       - name: Initialize Packer
         run: |
-          packer init kedarwebapp.pkr.hcl
           ls -l ./packer  # Ensure correct working directory and list contents of the packer directory
-        working-directory: ./packer
-
+          packer init ./packer/kedarwebapp.pkr.hcl  # Specify full path to the HCL file
+          
       # 6. Run Packer Build (with machine-readable output)
       - name: Run Packer Build
         run: |
           set -x  # Enable script debugging
-          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
+          packer build -debug -machine-readable -var "aws_region=us-east-1" ./packer/kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
           ls -l ./packer  # List the files in the 'packer' directory to confirm packer_output.txt was created
-        working-directory: ./packer
-
+          
       # 7. Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
         uses: aws-actions/configure-aws-credentials@v2
