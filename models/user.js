@@ -36,6 +36,10 @@ const AppUser = sequelize.define('AppUser', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
+    verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false, // Default to false, meaning unverified
+    },
 }, {
     tableName: "AppUsers",
     timestamps: false,
