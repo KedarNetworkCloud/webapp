@@ -67,9 +67,8 @@ build {
     ]
   }
 
-  # Post-Processor to capture the AMI ID and write it to packer_output.txt
-  post-processor "local-exec" {
-    command = "echo ${artifact.id} > packer_output.txt"
+  # This is the output block to display the AMI ID
+  output "ami_id" {
+    value = "${amazon-ebs.ubuntu.id}"
   }
-
 }

@@ -69,12 +69,11 @@ jobs:
         run: |
           ls -l  # List files to verify no unexpected changes after setting up Demo AWS credentials
 
-      # Step 10: Check Packer output and Set AMI ID from Packer output
       - name: Check Packer output and Set AMI ID from Packer output
         run: |
           cd packer  # Navigate to the directory where packer_output.txt is located (if necessary)
-          cat packer_output.txt  # Display the content of the file
-          AMI_ID=$(cat packer_output.txt)  # Read the AMI ID from the file
+          cat packer_output.txt  # Display the content of the file to verify it's correct
+          AMI_ID=$(grep -oP 'ami-[a-zA-Z0-9]+' packer_output.txt)  # Extract the full AMI ID with the ami- prefix
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV  # Set the AMI_ID as an environment variable for later use
           echo "AMI_ID set to: $AMI_ID"  # Verify the AMI_ID value is correctly set
 
