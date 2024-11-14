@@ -12,16 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1. Create zip file
+      # Step 2: Create zip file
       - name: Create zip file
         run: |
           zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
           ls -l  # List the files in the root directory to confirm zip file creation
 
-      # 2. Set up AWS CLI (Dev account)
+      # Step 3: Set up AWS CLI (Dev account)
       - name: Set up AWS CLI (Dev account)
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -29,31 +30,33 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_DEV_GIT_ROLE_SECRET_ACCESS_KEY }}
           aws-region: us-east-1  # Adjust based on your region
 
-      # 3. List files after AWS CLI setup
+      # Step 4: List files after AWS CLI setup
       - name: List files after AWS CLI setup
         run: |
           ls -l  # List files again to verify the AWS CLI setup did not alter anything
 
-      # 4. Set up Packer
+      # Step 5: Set up Packer
       - name: Set up Packer
         uses: hashicorp/setup-packer@v2
         with:
           version: latest
 
-      # 5. Initialize Packer
+      # Step 6: Initialize Packer (using cd packer)
       - name: Initialize Packer
         run: |
-          ls -l ./packer  # Ensure correct working directory and list contents of the packer directory
-          packer init ./packer/kedarwebapp.pkr.hcl  # Specify full path to the HCL file
+          cd packer  # Change to the packer directory
+          ls -l  # List the files inside the `packer` directory
+          packer init kedarwebapp.pkr.hcl  # Initialize Packer from the HCL file in the current directory
           
-      # 6. Run Packer Build (with machine-readable output)
+      # Step 7: Run Packer Build (with machine-readable output)
       - name: Run Packer Build
         run: |
+          cd packer  # Change to the packer directory
           set -x  # Enable script debugging
-          packer build -debug -machine-readable -var "aws_region=us-east-1" ./packer/kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
-          ls -l ./packer  # List the files in the 'packer' directory to confirm packer_output.txt was created
+          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
+          ls -l  # List the files in the current directory to confirm packer_output.txt was created
           
-      # 7. Set up AWS CLI (Demo account)
+      # Step 8: Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -61,19 +64,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}
           aws-region: us-east-1  # Adjust based on your region
 
-      # 8. List files after AWS CLI setup (Demo account)
+      # Step 9: List files after AWS CLI setup (Demo account)
       - name: List files after AWS CLI setup (Demo account)
         run: |
           ls -l  # List files to verify no unexpected changes after setting up Demo AWS credentials
 
-      # 9. Set AMI ID from Packer output
+      # Step 10: Set AMI ID from Packer output
       - name: Set AMI ID from Packer output
         run: |
           AMI_ID=$(grep -oP '(?<=ami-)[\w\d]+' packer_output.txt | head -n 1)
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
           ls -l ./packer  # Check packer directory contents to confirm packer_output.txt
 
-      # 10. Create New Launch Template Version (Demo)
+      # Step 11: Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
         run: |
           aws ec2 create-launch-template-version \
@@ -82,7 +85,7 @@ jobs:
             --launch-template-data "ImageId=${{ env.AMI_ID }}"
           ls -l  # Verify directory contents after launch template version creation
 
-      # 11. Update ASG with Latest Launch Template Version (Demo)
+      # Step 12: Update ASG with Latest Launch Template Version (Demo)
       - name: Update ASG with Latest Launch Template Version (Demo)
         run: |
           aws autoscaling update-auto-scaling-group \
@@ -90,7 +93,7 @@ jobs:
             --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version='$Latest'"
           ls -l  # Confirm directory contents after updating ASG
 
-      # 12. Start Instance Refresh and Monitor (Demo)
+      # Step 13: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
@@ -116,3 +119,4 @@ jobs:
               sleep 30
             fi
           done
+
