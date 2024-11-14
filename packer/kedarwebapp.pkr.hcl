@@ -22,7 +22,7 @@ source "amazon-ebs" "ubuntu" {
   vpc_id                      = "vpc-0730c8b36ce4de851"
   subnet_id                   = "subnet-0e2418a1340e2bbf2"
   associate_public_ip_address = true
-  ami_users                   = ["043309350711"]  # Replace with your DEMO AWS account ID
+  ami_users                   = ["043309350711"] # Replace with your DEMO AWS account ID
   tags = {
     Name = "MyApp-Image"
   }
@@ -36,7 +36,7 @@ build {
     inline = [
       "sudo groupadd csye6225 || { echo 'Failed to create group csye6225'; exit 1; }",
       "sudo useradd -r -g csye6225 -s /usr/sbin/nologin -m csye6225 || { echo 'Failed to create user csye6225'; exit 1; }",
-      "echo 'csye6225 ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/csye6225",  # Allow csye6225 to use sudo without a password
+      "echo 'csye6225 ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/csye6225", # Allow csye6225 to use sudo without a password
     ]
   }
 
@@ -66,10 +66,10 @@ build {
 
   # Manifest Post-Processor to track artifacts and create a manifest file
   post-processor "manifest" {
-    output      = "packer-manifest.json"      # The file where the manifest will be stored
-    strip_path  = true                        # Strips the path and stores only the file name
+    output     = "packer-manifest.json" # The file where the manifest will be stored
+    strip_path = true                   # Strips the path and stores only the file name
     custom_data = {
-      "my_custom_data" = "example"            # Custom data to add to the manifest
+      "my_custom_data" = "example" # Custom data to add to the manifest
     }
   }
 }
