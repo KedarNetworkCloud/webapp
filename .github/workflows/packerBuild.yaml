@@ -91,9 +91,8 @@ jobs:
         run: |
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=${{ env.AMI_ID }}"
+            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$Latest"
           ls -l  # Verify directory contents after updating the Auto Scaling Group with the latest launch template version
-
 
       # Step 13: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
