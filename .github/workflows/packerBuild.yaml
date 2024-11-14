@@ -89,9 +89,17 @@ jobs:
       # Step 12: Update ASG with Latest Launch Template Version (Demo)
       - name: Update ASG with Latest Launch Template Version (Demo)
         run: |
+          # Fetch the latest version number of the launch template
+          VERSION=$(aws ec2 describe-launch-templates \
+            --launch-template-name kedar-web-app-launch-template \
+            --query 'LaunchTemplates[0].LatestVersionNumber' \
+            --output text)
+          echo "Latest Launch Template Version: $VERSION"
+          
+          # Update Auto Scaling Group with the latest version of the launch template
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$Latest"
+            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$VERSION"
           ls -l  # Verify directory contents after updating the Auto Scaling Group with the latest launch template version
 
       # Step 13: Start Instance Refresh and Monitor (Demo)
