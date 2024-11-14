@@ -49,5 +49,7 @@ Assignment 06 - Using S3 Buckets to store User profile images and cloudwatch for
 
 Assignment 06 - Final code push
 
-Assignment 08 - SETTING UP CI/CD PIPELINES - Yes
+Assignment 07 - Autoscaling groups
+
+Assignment 08 - SETTING UP CI/CD PIPELINES 
 

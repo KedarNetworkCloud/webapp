@@ -77,22 +77,23 @@ jobs:
           AMI_ID=$(grep -oP 'ami-[\w\d]+' packer_output.txt | head -n 1)
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
 
-      # Step 11: Retrieve Instance Type from Latest Launch Template Version
-      - name: Retrieve Instance Type from Latest Launch Template Version
-        run: |
-          INSTANCE_TYPE=$(aws ec2 describe-launch-template-versions \
-            --launch-template-name kedar-web-app-launch-template \
-            --query 'LaunchTemplateVersions[-1].LaunchTemplateData.InstanceType' \
-            --output text)
-          echo "INSTANCE_TYPE=${INSTANCE_TYPE}" >> $GITHUB_ENV
 
       # Step 12: Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
         run: |
+          # Get the latest version number of the launch template
+          LATEST_VERSION=$(aws ec2 describe-launch-templates \
+            --launch-template-name kedar-web-app-launch-template \
+            --query 'LaunchTemplates[0].LatestVersionNumber' \
+            --output text)
+          echo "Cloning from Launch Template Version: $LATEST_VERSION"
+
+          # Create a new version with only the AMI ID updated
           aws ec2 create-launch-template-version \
             --launch-template-name kedar-web-app-launch-template \
+            --source-version "$LATEST_VERSION" \
             --version-description "New version with latest AMI" \
-            --launch-template-data "ImageId=${{ env.AMI_ID }},InstanceType=${{ env.INSTANCE_TYPE }}"
+            --launch-template-data "{\"ImageId\":\"${{ env.AMI_ID }}\"}"
           ls -l  # Verify directory contents after launch template version creation
 
       # Step 13: Update ASG with Latest Launch Template Version (Demo)
