@@ -47,7 +47,7 @@ jobs:
           cd packer  # Change to the packer directory
           ls -l  # List the files inside the `packer` directory
           packer init kedarwebapp.pkr.hcl  # Initialize Packer from the HCL file in the current directory
-          
+
       # Step 7: Run Packer Build (with machine-readable output)
       - name: Run Packer Build
         run: |
@@ -55,7 +55,7 @@ jobs:
           set -x  # Enable script debugging
           packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
           ls -l  # List the files in the current directory to confirm packer_output.txt was created
-          
+
       # Step 8: Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
         uses: aws-actions/configure-aws-credentials@v2
@@ -77,16 +77,25 @@ jobs:
           AMI_ID=$(grep -oP 'ami-[\w\d]+' packer_output.txt | head -n 1)
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
 
-      # Step 11: Create New Launch Template Version (Demo)
+      # Step 11: Retrieve Instance Type from Latest Launch Template Version
+      - name: Retrieve Instance Type from Latest Launch Template Version
+        run: |
+          INSTANCE_TYPE=$(aws ec2 describe-launch-template-versions \
+            --launch-template-name kedar-web-app-launch-template \
+            --query 'LaunchTemplateVersions[-1].LaunchTemplateData.InstanceType' \
+            --output text)
+          echo "INSTANCE_TYPE=${INSTANCE_TYPE}" >> $GITHUB_ENV
+
+      # Step 12: Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
         run: |
           aws ec2 create-launch-template-version \
             --launch-template-name kedar-web-app-launch-template \
             --version-description "New version with latest AMI" \
-            --launch-template-data "ImageId=${{ env.AMI_ID }}"
+            --launch-template-data "ImageId=${{ env.AMI_ID }},InstanceType=${{ env.INSTANCE_TYPE }}"
           ls -l  # Verify directory contents after launch template version creation
 
-      # Step 12: Update ASG with Latest Launch Template Version (Demo)
+      # Step 13: Update ASG with Latest Launch Template Version (Demo)
       - name: Update ASG with Latest Launch Template Version (Demo)
         run: |
           # Fetch the latest version number of the launch template
@@ -95,14 +104,14 @@ jobs:
             --query 'LaunchTemplates[0].LatestVersionNumber' \
             --output text)
           echo "Latest Launch Template Version: $VERSION"
-          
+
           # Update Auto Scaling Group with the latest version of the launch template
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name kedar-web-app-asg \
             --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$VERSION"
           ls -l  # Verify directory contents after updating the Auto Scaling Group with the latest launch template version
 
-      # Step 13: Start Instance Refresh and Monitor (Demo)
+      # Step 14: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
