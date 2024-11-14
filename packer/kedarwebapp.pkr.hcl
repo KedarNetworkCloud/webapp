@@ -64,8 +64,12 @@ build {
     ]
   }
 
-  # Post-processor block to output AMI ID to a file
+  # Manifest Post-Processor to track artifacts and create a manifest file
   post-processor "manifest" {
-    output = "ami-id.txt"
+    output     = "packer-manifest.json" # The file where the manifest will be stored
+    strip_path = true                   # Strips the path and stores only the file name
+    custom_data = {
+      "my_custom_data" = "example" # Custom data to add to the manifest
+    }
   }
 }
