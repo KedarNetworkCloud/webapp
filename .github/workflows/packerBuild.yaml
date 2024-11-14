@@ -72,10 +72,10 @@ jobs:
       # Step 10: Check Packer output and Set AMI ID from Packer output
       - name: Check Packer output and Set AMI ID from Packer output
         run: |
-          cd packer  # Change to the packer directory
-          cat packer_output.txt  # Display the contents of the Packer output file
-          AMI_ID=$(grep -oP 'ami-[\w\d]+' packer_output.txt | head -n 1)
-          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
+          cd packer  # Navigate to the directory where packer_output.txt is located (if necessary)
+          cat packer_output.txt  # Display the content of the file
+          AMI_ID=$(cat packer_output.txt)  # Read the AMI ID from the file
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV  # Set the AMI_ID as an environment variable for later use
           echo "AMI_ID set to: $AMI_ID"  # Verify the AMI_ID value is correctly set
 
       # Step 11: Verify AMI_ID variable before proceeding

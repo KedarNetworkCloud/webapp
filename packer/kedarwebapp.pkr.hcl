@@ -67,4 +67,9 @@ build {
     ]
   }
 
+  # Post-Processor to capture the AMI ID and write it to packer_output.txt
+  post-processor "local-exec" {
+    command = "echo ${artifact.id} > packer_output.txt"
+  }
+
 }
