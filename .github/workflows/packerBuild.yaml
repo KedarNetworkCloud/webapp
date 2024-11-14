@@ -87,12 +87,12 @@ jobs:
           ls -l  # Verify directory contents after launch template version creation
 
       # Step 12: Update ASG with Latest Launch Template Version (Demo)
-      - name: Update ASG with Latest Launch Template Version (Demo)
+      - name: Check Packer output and Set AMI ID from Packer output
         run: |
-          aws autoscaling update-auto-scaling-group \
-            --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version='$Latest'"
-          ls -l  # Confirm directory contents after updating ASG
+          cd packer  # Change to the packer directory
+          cat packer_output.txt  # Display the contents of the Packer output file
+          AMI_ID=$(grep -oP 'ami-[\w\d]+' packer_output.txt | head -n 1)
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
 
       # Step 13: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
