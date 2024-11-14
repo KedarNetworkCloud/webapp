@@ -31,7 +31,7 @@ source "amazon-ebs" "ubuntu" {
 build {
   sources = ["source.amazon-ebs.ubuntu"]
 
-  # Create the csye6225 group and user
+  # Provisioners for creating group/user, copying files, and installing dependencies
   provisioner "shell" {
     inline = [
       "sudo groupadd csye6225 || { echo 'Failed to create group csye6225'; exit 1; }",
@@ -40,13 +40,11 @@ build {
     ]
   }
 
-  # Copy the zipped project folder to the VM
   provisioner "file" {
-    source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
+    source      = "../project.zip"
     destination = "/tmp/project.zip"
   }
 
-  # Unzip the project on the VM and set ownership
   provisioner "shell" {
     inline = [
       "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi",
@@ -66,9 +64,8 @@ build {
     ]
   }
 
-  # Post-processor to save the AMI ID to a file
-  post-processor "artifice" {
+  # Post-processor block to output AMI ID to a file
+  post-processor "manifest" {
     output = "ami-id.txt"
-    types  = ["amazon-ebs"]
   }
 }
