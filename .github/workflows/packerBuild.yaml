@@ -48,13 +48,13 @@ jobs:
           ls -l  # List the files inside the `packer` directory
           packer init kedarwebapp.pkr.hcl  # Initialize Packer from the HCL file in the current directory
 
-      # Step 7: Run Packer Build (with machine-readable output)
+      # Step 7: Run Packer Build (with machine-readable output and manifest post-processor)
       - name: Run Packer Build
         run: |
           cd packer  # Change to the packer directory
           set -x  # Enable script debugging
-          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > ami-id.txt || { echo 'Packer build failed'; cat ami-id.txt; exit 1; }
-          ls -l  # List the files in the current directory to confirm ami-id.txt was created
+          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer-output.log || { echo 'Packer build failed'; cat packer-output.log; exit 1; }
+          ls -l  # List the files in the current directory to confirm packer-output.log was created
 
       # Step 8: Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
@@ -69,14 +69,15 @@ jobs:
         run: |
           ls -l  # List files to verify no unexpected changes after setting up Demo AWS credentials
 
-      # Step 10: Check Packer output and Set AMI ID from ami-id.txt
-      - name: Check Packer output and Set AMI ID from ami-id.txt
+      # Step 10: Check Packer manifest and Set AMI ID from manifest
+      - name: Check Packer manifest and Set AMI ID from manifest
         run: |
-          cd packer  # Navigate to the directory where ami-id.txt is located
-          cat ami-id.txt  # Display the content of the file to verify it's correct
-          AMI_ID=$(grep -oP 'ami-[a-zA-Z0-9]+' ami-id.txt)  # Extract the full AMI ID with the ami- prefix
+          cd packer  # Navigate to the directory where packer-manifest.json is located
+          cat packer-manifest.json  # Display the content of the manifest file to verify it's correct
+          AMI_ID=$(jq -r '.builds[-1].artifact_id | split(":") | .[1]' packer-manifest.json)  # Extract the AMI ID from the manifest
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV  # Set the AMI_ID as an environment variable for later use
           echo "AMI_ID set to: $AMI_ID"  # Verify the AMI_ID value is correctly set
+
 
       # Step 11: Verify AMI_ID variable before proceeding
       - name: Verify AMI ID before proceeding
