@@ -21,7 +21,7 @@ source "amazon-ebs" "ubuntu" {
   ami_description             = "Custom image with application dependencies"
   vpc_id                      = "vpc-0730c8b36ce4de851"
   subnet_id                   = "subnet-0e2418a1340e2bbf2"
-  associate_public_ip_address = true             # Corrected line
+  associate_public_ip_address = true
   ami_users                   = ["043309350711"] # Replace with your DEMO AWS account ID
   tags = {
     Name = "MyApp-Image"
@@ -31,7 +31,7 @@ source "amazon-ebs" "ubuntu" {
 build {
   sources = ["source.amazon-ebs.ubuntu"]
 
-  # Create the csye6225 group and user
+  # Provisioners for creating group/user, copying files, and installing dependencies
   provisioner "shell" {
     inline = [
       "sudo groupadd csye6225 || { echo 'Failed to create group csye6225'; exit 1; }",
@@ -40,14 +40,11 @@ build {
     ]
   }
 
-  # Copy the zipped project folder to the VM
   provisioner "file" {
-    source      = "../project.zip" # Path where zip is created in the GitHub Actions runner
+    source      = "../project.zip"
     destination = "/tmp/project.zip"
   }
 
-
-  # Unzip the project on the VM and set ownership
   provisioner "shell" {
     inline = [
       "if ! command -v unzip &> /dev/null; then sudo apt-get update && sudo apt-get install -y unzip; fi",
@@ -67,4 +64,8 @@ build {
     ]
   }
 
+  # Post-processor block to output AMI ID to a file
+  post-processor "manifest" {
+    output = "ami-id.txt"
+  }
 }

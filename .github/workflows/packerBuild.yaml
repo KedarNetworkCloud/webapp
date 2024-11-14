@@ -53,8 +53,8 @@ jobs:
         run: |
           cd packer  # Change to the packer directory
           set -x  # Enable script debugging
-          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer_output.txt || { echo 'Packer build failed'; cat packer_output.txt; exit 1; }
-          ls -l  # List the files in the current directory to confirm packer_output.txt was created
+          packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > ami-id.txt || { echo 'Packer build failed'; cat ami-id.txt; exit 1; }
+          ls -l  # List the files in the current directory to confirm ami-id.txt was created
 
       # Step 8: Set up AWS CLI (Demo account)
       - name: Set up AWS CLI (Demo account)
@@ -69,13 +69,13 @@ jobs:
         run: |
           ls -l  # List files to verify no unexpected changes after setting up Demo AWS credentials
 
-      # Step 10: Check Packer output and Set AMI ID from Packer output
-      - name: Check Packer output and Set AMI ID from Packer output
+      # Step 10: Check Packer output and Set AMI ID from ami-id.txt
+      - name: Check Packer output and Set AMI ID from ami-id.txt
         run: |
-          cd packer  # Change to the packer directory
-          cat packer_output.txt  # Display the contents of the Packer output file
-          AMI_ID=$(grep -oP 'ami-[\w\d]+' packer_output.txt | head -n 1)
-          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
+          cd packer  # Navigate to the directory where ami-id.txt is located
+          cat ami-id.txt  # Display the content of the file to verify it's correct
+          AMI_ID=$(grep -oP 'ami-[a-zA-Z0-9]+' ami-id.txt)  # Extract the full AMI ID with the ami- prefix
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV  # Set the AMI_ID as an environment variable for later use
           echo "AMI_ID set to: $AMI_ID"  # Verify the AMI_ID value is correctly set
 
       # Step 11: Verify AMI_ID variable before proceeding
