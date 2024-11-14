@@ -76,7 +76,6 @@ jobs:
           cat packer_output.txt  # Display the contents of the Packer output file
           AMI_ID=$(grep -oP '(?<=ami-)[\w\d]+' packer_output.txt | head -n 1)
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
-          ls -l ./packer  # Check packer directory contents to confirm packer_output.txt
 
       # Step 11: Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
