@@ -75,7 +75,7 @@ application.all('/healthz', checkDBMiddleware, logMetricsMiddleware, async (req,
 });
 
 // Use routes
-application.use('/v1', checkDBMiddleware, newUserRoutes);
+application.use('/v2', checkDBMiddleware, newUserRoutes);
 
 // Sync database and start server
 const startServer = async () => {

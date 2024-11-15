@@ -45,7 +45,7 @@ describe('User Routes Integration Test', () => {
         };
 
         const response = await request(app)
-            .post('/v1/user') // Match the /user route
+            .post('/v2/user') // Match the /user route
             .send(newUser)
             .set('Accept', 'application/json');
 
