@@ -94,14 +94,14 @@ jobs:
           echo "Using AMI_ID: ${{ env.AMI_ID }}"  # Display the AMI ID before creating the new version
           # Get the latest version number of the launch template
           LATEST_VERSION=$(aws ec2 describe-launch-templates \
-            --launch-template-name kedar-web-app-launch-template \
+            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
             --query 'LaunchTemplates[0].LatestVersionNumber' \
             --output text)
           echo "Cloning from Launch Template Version: $LATEST_VERSION"
 
           # Create a new version with only the AMI ID updated
           aws ec2 create-launch-template-version \
-            --launch-template-name kedar-web-app-launch-template \
+            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
             --source-version "$LATEST_VERSION" \
             --version-description "New version with latest AMI" \
             --launch-template-data "{\"ImageId\":\"${{ env.AMI_ID }}\"}"
@@ -113,29 +113,29 @@ jobs:
           echo "Using AMI_ID: ${{ env.AMI_ID }}"  # Display the AMI ID before updating ASG
           # Fetch the latest version number of the launch template
           VERSION=$(aws ec2 describe-launch-templates \
-            --launch-template-name kedar-web-app-launch-template \
+            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
             --query 'LaunchTemplates[0].LatestVersionNumber' \
             --output text)
           echo "Latest Launch Template Version: $VERSION"
 
           # Update Auto Scaling Group with the latest version of the launch template
           aws autoscaling update-auto-scaling-group \
-            --auto-scaling-group-name kedar-web-app-asg \
-            --launch-template "LaunchTemplateName=kedar-web-app-launch-template,Version=$VERSION"
+            --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
+            --launch-template "LaunchTemplateName=${{ secrets.LAUNCH_TEMPLATE_NAME }},Version=$VERSION"
           ls -l  # Verify directory contents after updating the Auto Scaling Group with the latest launch template version
 
       # Step 14: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name kedar-web-app-asg \
+            --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
             --query 'InstanceRefreshId' \
             --output text)
           echo "Started instance refresh with ID $REFRESH_ID"
           ls -l  # List files to confirm setup before entering the monitoring loop
           while true; do
             STATUS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name kedar-web-app-asg \
+              --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
               --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
               --output text)
             echo "Current refresh status: $STATUS"
