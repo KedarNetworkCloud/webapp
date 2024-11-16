@@ -111,6 +111,7 @@ const authMiddleware = async (req, res, next) => {
 };
 
 
+const { v4: uuidv4 } = require('uuid'); // Import UUID
 
 router.post('/user', checkDBMiddleware, async (req, res) => {
     const startTime = Date.now(); // Start measuring execution time
@@ -173,17 +174,25 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
         const userCreationTime = Date.now() - userCreationStartTime; // Calculate time taken for the DB operation
         statsd.timing('api.user.create.db.creation.time', userCreationTime); // Log user creation time
 
-        logger.info('New User created.'); // Log bad request response
+        logger.info('New User created.'); // Log user creation
         const executionTime = Date.now() - startTime; // Calculate total execution time
         statsd.timing('api.user.create.execution.time', executionTime); // Log total execution time
+
+        // Generate a new token for the user
+        const token = uuidv4(); // Generate a new unique token
+
+        // Store the token in the user's model (verificationToken column)
+        newUser.verificationToken = token;
+        await newUser.save();  // Save the updated user with the verificationToken
 
         // Prepare the message for SNS
         const snsMessage = {
             Message: JSON.stringify({
                 email: newUser.email,
-                token: newUser.id // Assuming `id` is used as a user token
+                token: token, // Use the newly generated token
+                BASE_URL: "http://demo.csye6225kedar.xyz/v1"
             }),
-            TopicArn: process.env.SNS_TOPIC_ARN // The SNS topic ARN should be set in your environment variables
+            TopicArn: process.env.SNS_TOPIC_ARN
         };
 
         // Publish the message to SNS
@@ -210,12 +219,13 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
     }
 });
 
+
 router.get('/verify', async (req, res) => {
     const { user, token } = req.query;
 
     // Validate query parameters
     if (!user || !token) {
-        return res.status(400).json();
+        return res.status(400).json({ message: 'User email and token are required.' });
     }
 
     try {
@@ -223,30 +233,35 @@ router.get('/verify', async (req, res) => {
         const userRecord = await AppUser.findOne({ where: { email: user } });
 
         if (!userRecord) {
-            return res.status(404).json();
+            return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Check if the token matches the user's ID
-        if (userRecord.id !== token) {
-            return res.status(400).json();
+        // Check if the token matches the user's stored verification token
+        if (userRecord.verificationToken !== token) {
+            return res.status(400).json({ message: 'Invalid token.' });
         }
 
-        // Check if the token is older than 2 minutes
-        const timeDifference = Date.now() - new Date(userRecord.account_created).getTime();
+        // Check if the email verification was sent more than 2 minutes ago
+        if (!userRecord.verificationEmailSentAt) {
+            return res.status(400).json({ message: 'Verification email was never sent.' });
+        }
+
+        const timeDifference = Date.now() - new Date(userRecord.verificationEmailSentAt).getTime();
         if (timeDifference > 2 * 60 * 1000) { // 2 minutes in milliseconds
-            return res.status(400).json();
+            return res.status(400).json({ message: 'Verification token expired.' });
         }
 
         // Mark the user as verified
         userRecord.verified = true;
         await userRecord.save();
 
-        return res.status(200).json();
+        return res.status(200).json({ message: 'Email verified successfully.' });
     } catch (error) {
         console.error('Error during verification:', error);
         return res.status(500).json({ message: 'Internal server error.' });
     }
 });
+
 
 
 // Update user
