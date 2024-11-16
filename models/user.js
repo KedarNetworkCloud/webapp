@@ -40,6 +40,14 @@ const AppUser = sequelize.define('AppUser', {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // Default to false, meaning unverified
     },
+    verificationToken: {
+        type: DataTypes.STRING, // New field for storing verification token
+        allowNull: true,        // It can be null until the token is generated
+    },
+    verificationEmailSentAt: {
+        type: DataTypes.DATE,   // New field for datetime of when the verification email was sent
+        allowNull: true,        // Allow null initially, as it may not be set until after the email is sent
+    },
 }, {
     tableName: "AppUsers",
     timestamps: false,
