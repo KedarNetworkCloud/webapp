@@ -71,15 +71,18 @@ application.all('/healthz', checkDBMiddleware, logMetricsMiddleware, async (req,
 // Use routes
 application.use('/v1', checkDBMiddleware, newUserRoutes);
 
-// Sync database and start server
 const startServer = async () => {
     try {
         await sequelize.authenticate();
         logger.info("Database connection successful");
 
-        // Synchronize database schema with models
-        await sequelize.sync({ alter: true });
-        logger.info('Database schema synchronized successfully.');
+        // Sync AppUsers table first
+        await AppUsers.sync({ alter: true });
+        logger.info('AppUsers table synchronized successfully.');
+
+        // Then sync UserImages table
+        await UserImages.sync({ alter: true });
+        logger.info('UserImages table synchronized successfully.');
 
         const port = process.env.APP_PORT || 8080;
         application.listen(port, () => {
