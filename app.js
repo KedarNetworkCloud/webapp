@@ -14,8 +14,8 @@ const statsDConfig = require('./config/statsDconfig.json');
 
 // Configure StatsD client
 const statsdClient = new StatsD({
-    host: 'localhost', // StatsD host (typically localhost if running CloudWatch Agent on the same EC2 instance)
-    port: statsDConfig.port         // Default StatsD port
+    host: 'localhost',
+    port: statsDConfig.port,
 });
 
 // Middleware to check DB connection
@@ -29,20 +29,14 @@ const checkDBMiddleware = async (req, res, next) => {
     }
 };
 
+// Middleware for logging metrics
 const logMetricsMiddleware = async (req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
         const duration = Date.now() - start;
-
-        // Only track metrics if this is a /healthz request
         if (req.path === '/healthz') {
-            // Metric 1: Increment the request count for /healthz endpoint in StatsD
             statsdClient.increment('healthz.request_count');
-
-            // Metric 2: Record the duration of /healthz requests
             statsdClient.timing('healthz.response_time', duration);
-
-            // Log the metrics directly
             logger.info(`Logged metrics: duration of /healthz request: ${duration}ms`);
         }
     });
@@ -81,16 +75,18 @@ application.use('/v1', checkDBMiddleware, newUserRoutes);
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        await AppUsers.sync();
-        await UserImages.sync();
-        logger.info('Database synced successfully.');
+        logger.info("Database connection successful");
+
+        // Synchronize database schema with models
+        await sequelize.sync({ alter: true });
+        logger.info('Database schema synchronized successfully.');
 
         const port = process.env.APP_PORT || 8080;
         application.listen(port, () => {
             logger.info(`App listening on port ${port}`);
         });
     } catch (err) {
-        logger.error('Error creating database tables:', err);
+        logger.error('Error during database synchronization:', err);
     }
 };
 
