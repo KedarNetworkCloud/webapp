@@ -56,13 +56,23 @@ jobs:
           packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer-output.log || { echo 'Packer build failed'; cat packer-output.log; exit 1; }
           ls -l  # List the files in the current directory to confirm packer-output.log was created
 
-      # Step 8: Set up AWS CLI (Demo account)
-      - name: Set up AWS CLI (Demo account)
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_DEMO_GIT_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Adjust based on your region
+      # Step 8: Dynamically Set up AWS CLI based on the ENVIRONMENT secret
+      - name: Set up AWS CLI based on environment
+        run: |
+          if [[ "${{ secrets.ENVIRONMENT }}" == "DEV" ]]; then
+            echo "Setting up AWS CLI for DEV environment"
+            aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID_DEV_ACCOUNT }}"
+            aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY_DEV_ACCOUNT }}"
+            aws configure set region "us-east-1"
+          elif [[ "${{ secrets.ENVIRONMENT }}" == "DEMO" ]]; then
+            echo "Setting up AWS CLI for DEMO environment"
+            aws configure set aws_access_key_id "${{ secrets.AWS_DEMO_GIT_ACCESS_KEY_ID }}"
+            aws configure set aws_secret_access_key "${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}"
+            aws configure set region "us-east-1"
+          else
+            echo "Error: Invalid ENVIRONMENT value (${ secrets.ENVIRONMENT }). Exiting."
+            exit 1
+          fi
 
       # Step 9: List files after AWS CLI setup (Demo account)
       - name: List files after AWS CLI setup (Demo account)
