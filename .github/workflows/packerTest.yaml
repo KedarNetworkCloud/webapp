@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - closed
 
 jobs:
   packer-init-fmt-validate:
