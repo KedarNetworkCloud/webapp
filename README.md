@@ -51,5 +51,5 @@ Assignment 06 - Final code push
 
 Assignment 07 - Autoscaling groups - And Load balancers
 
-Assignment 08 - SETTING UP CI/CD PIPELINES - Everything is automated!!!
+Assignment 08 - SETTING UP CI/CD PIPELINES - Everything is automated!!! - Final check
 
