@@ -21,7 +21,6 @@ jobs:
         run: |
           zip -r project.zip . -x "*.git*"  # Zip the entire repository excluding .git
           ls -l  # List the files in the root directory to confirm zip file creation
-
       # Step 3: Set up AWS CLI (Dev account)
       - name: Set up AWS CLI (Dev account)
         uses: aws-actions/configure-aws-credentials@v2
@@ -34,7 +33,6 @@ jobs:
       - name: List files after AWS CLI setup
         run: |
           ls -l  # List files again to verify the AWS CLI setup did not alter anything
-
       # Step 5: Set up Packer
       - name: Set up Packer
         uses: hashicorp/setup-packer@v2
@@ -47,7 +45,6 @@ jobs:
           cd packer  # Change to the packer directory
           ls -l  # List the files inside the `packer` directory
           packer init kedarwebapp.pkr.hcl  # Initialize Packer from the HCL file in the current directory
-
       # Step 7: Run Packer Build (with machine-readable output and manifest post-processor)
       - name: Run Packer Build
         run: |
@@ -55,30 +52,18 @@ jobs:
           set -x  # Enable script debugging
           packer build -debug -machine-readable -var "aws_region=us-east-1" kedarwebapp.pkr.hcl > packer-output.log || { echo 'Packer build failed'; cat packer-output.log; exit 1; }
           ls -l  # List the files in the current directory to confirm packer-output.log was created
-
-      # Step 8: Dynamically Set up AWS CLI based on the ENVIRONMENT secret
-      - name: Set up AWS CLI based on environment
-        run: |
-          if [[ "${{ secrets.ENVIRONMENT }}" == "DEV" ]]; then
-            echo "Setting up AWS CLI for DEV environment"
-            aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID_DEV_ACCOUNT }}"
-            aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY_DEV_ACCOUNT }}"
-            aws configure set region "us-east-1"
-          elif [[ "${{ secrets.ENVIRONMENT }}" == "DEMO" ]]; then
-            echo "Setting up AWS CLI for DEMO environment"
-            aws configure set aws_access_key_id "${{ secrets.AWS_DEMO_GIT_ACCESS_KEY_ID }}"
-            aws configure set aws_secret_access_key "${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}"
-            aws configure set region "us-east-1"
-          else
-            echo "Error: Invalid ENVIRONMENT value (${ secrets.ENVIRONMENT }). Exiting."
-            exit 1
-          fi
+      # Step 8: Set up AWS CLI (Demo account)
+      - name: Set up AWS CLI (Demo account)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEMO_GIT_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEMO_GIT_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Adjust based on your region
 
       # Step 9: List files after AWS CLI setup (Demo account)
       - name: List files after AWS CLI setup (Demo account)
         run: |
           ls -l  # List files to verify no unexpected changes after setting up Demo AWS credentials
-
       # Step 10: Check Packer manifest and Set AMI ID from manifest
       - name: Check Packer manifest and Set AMI ID from manifest
         run: |
@@ -87,8 +72,6 @@ jobs:
           AMI_ID=$(jq -r '.builds[-1].artifact_id | split(":") | .[1]' packer-manifest.json)  # Extract the AMI ID from the manifest
           echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV  # Set the AMI_ID as an environment variable for later use
           echo "AMI_ID set to: $AMI_ID"  # Verify the AMI_ID value is correctly set
-
-
       # Step 11: Verify AMI_ID variable before proceeding
       - name: Verify AMI ID before proceeding
         run: |
@@ -97,7 +80,6 @@ jobs:
             echo "AMI_ID is not set correctly. Exiting."
             exit 1
           fi
-
       # Step 12: Create New Launch Template Version (Demo)
       - name: Create New Launch Template Version (Demo)
         run: |
@@ -108,7 +90,6 @@ jobs:
             --query 'LaunchTemplates[0].LatestVersionNumber' \
             --output text)
           echo "Cloning from Launch Template Version: $LATEST_VERSION"
-
           # Create a new version with only the AMI ID updated
           aws ec2 create-launch-template-version \
             --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
@@ -116,7 +97,6 @@ jobs:
             --version-description "New version with latest AMI" \
             --launch-template-data "{\"ImageId\":\"${{ env.AMI_ID }}\"}"
           ls -l  # Verify directory contents after launch template version creation
-
       # Step 13: Update ASG with Latest Launch Template Version (Demo)
       - name: Update ASG with Latest Launch Template Version (Demo)
         run: |
@@ -127,13 +107,11 @@ jobs:
             --query 'LaunchTemplates[0].LatestVersionNumber' \
             --output text)
           echo "Latest Launch Template Version: $VERSION"
-
           # Update Auto Scaling Group with the latest version of the launch template
           aws autoscaling update-auto-scaling-group \
             --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
             --launch-template "LaunchTemplateName=${{ secrets.LAUNCH_TEMPLATE_NAME }},Version=$VERSION"
           ls -l  # Verify directory contents after updating the Auto Scaling Group with the latest launch template version
-
       # Step 14: Start Instance Refresh and Monitor (Demo)
       - name: Start Instance Refresh and Monitor (Demo)
         run: |
