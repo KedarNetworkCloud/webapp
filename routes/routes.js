@@ -190,9 +190,9 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             Message: JSON.stringify({
                 email: newUser.email,
                 token: token, // Use the newly generated token
-                BASE_URL: "http://demo.csye6225kedar.xyz/v2"
+                BASE_URL: "http://demo.csye6225kedar.xyz/v2/verify"
             }),
-            TopicArn: process.env.SNS_TOPIC_ARN
+            TopicArn: process.env.SNS_TOPIC_ARNv
         };
 
         // Publish the message to SNS
