@@ -190,7 +190,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             Message: JSON.stringify({
                 email: newUser.email,
                 token: token, // Use the newly generated token
-                BASE_URL: "http://demo.csye6225kedar.xyz/v1/verify"
+                BASE_URL: "http://demo.csye6225kedar.xyz/v2/verify"
             }),
             TopicArn: process.env.SNS_TOPIC_ARN
         };
@@ -225,6 +225,7 @@ router.get('/verify', async (req, res) => {
 
     // Validate query parameters
     if (!user || !token) {
+        console.warn('Verification attempt failed: Missing user or token.');
         return res.status(400).json({ message: 'User email and token are required.' });
     }
 
@@ -233,27 +234,37 @@ router.get('/verify', async (req, res) => {
         const userRecord = await AppUser.findOne({ where: { email: user } });
 
         if (!userRecord) {
+            console.warn(`Verification attempt failed: User not found for email ${user}.`);
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Check if the token matches the user's stored verification token
+        // Check if the verification token matches
         if (userRecord.verificationToken !== token) {
+            console.warn(`Invalid token provided for email ${user}.`);
             return res.status(400).json({ message: 'Invalid token.' });
         }
 
-        // Check if the email verification was sent more than 2 minutes ago
+        // Ensure verification token was sent
         if (!userRecord.verificationEmailSentAt) {
+            console.warn(`Verification email not sent for user ${user}.`);
             return res.status(400).json({ message: 'Verification email was never sent.' });
         }
 
+        // Check if the token is still valid (e.g., sent within the last 2 minutes)
         const timeDifference = Date.now() - new Date(userRecord.verificationEmailSentAt).getTime();
         if (timeDifference > 2 * 60 * 1000) { // 2 minutes in milliseconds
+            console.warn(`Verification token expired for email ${user}.`);
             return res.status(400).json({ message: 'Verification token expired.' });
         }
 
-        // Mark the user as verified
-        userRecord.verified = true;
-        await userRecord.save();
+        // Update the verified status only after all checks have passed
+        if (!userRecord.verified) {
+            userRecord.verified = true; // Mark the user as verified
+            await userRecord.save();
+            console.info(`User ${user} successfully verified.`);
+        } else {
+            console.warn(`User ${user} is already verified.`);
+        }
 
         return res.status(200).json({ message: 'Email verified successfully.' });
     } catch (error) {
