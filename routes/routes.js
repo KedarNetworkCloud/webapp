@@ -190,7 +190,7 @@ router.post('/user', checkDBMiddleware, async (req, res) => {
             Message: JSON.stringify({
                 email: newUser.email,
                 token: token, // Use the newly generated token
-                BASE_URL: "http://demo.csye6225kedar.xyz/v2/verify"
+                BASE_URL: "http://demo.csye6225kedar.xyz/v1/verify"
             }),
             TopicArn: process.env.SNS_TOPIC_ARN
         };

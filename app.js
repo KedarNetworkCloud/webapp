@@ -70,34 +70,8 @@ application.all('/healthz', checkDBMiddleware, logMetricsMiddleware, async (req,
 
 
 
-// Health check routes with metrics middleware
-application.get('/cicd', checkDBMiddleware, logMetricsMiddleware, async (req, res) => {
-    logger.info('Received health check request.');
-
-    let contentLength = req.headers['content-length'] ? parseInt(req.headers['content-length'], 10) : 0;
-
-    if (Object.keys(req.query).length > 0) {
-        logger.warn('Health check request contains query parameters.');
-        return res.status(400).json();
-    }
-
-    if (contentLength === 0) {
-        logger.info('Health check response: 200 OK.');
-        return res.status(200).set('Cache-Control', 'no-cache').send();
-    } else if (contentLength > 0) {
-        logger.error('Health check response: 400 Bad Request.');
-        return res.status(400).send('');
-    }
-});
-
-application.all('/cicd', checkDBMiddleware, logMetricsMiddleware, async (req, res) => {
-    logger.error('Invalid route.');
-    return res.status(405).set('Cache-Control', 'no-cache').send();
-});
-
-
 // Use routes
-application.use('/v2', checkDBMiddleware, newUserRoutes);
+application.use('/v1', checkDBMiddleware, newUserRoutes);
 
 const startServer = async () => {
     try {
